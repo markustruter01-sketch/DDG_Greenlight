@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "DDG Greenlight"
+description = "Deterministic regulatory code assessments with evidence-backed findings, standards reports, remediation plans, and optional Claude-assisted fixes followed by rule-based verification."
+version = "1.0.0"
+id = "artifacts/greenlight"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24624
+
+[services.development]
+run = "pnpm --filter @workspace/greenlight run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/greenlight", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/greenlight/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24624"
+BASE_PATH = "/"

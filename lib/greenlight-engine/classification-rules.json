@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "excludePaths": "(^|/)(node_modules|vendor|catalogues|dist|tests?|__tests__|fixtures?|examples?)(/|$)|\\.(test|spec)\\.",
+  "notice": "Indicative PSPF business-impact suggestion only. Content patterns cannot establish a government security classification. A responsible owner must confirm impact, context, aggregation and applicable policy.",
+  "rules": [
+    { "id": "data.personal", "kind": "personal identifiers", "pattern": "\\b(email|phone_number|date_of_birth|passport|national_id|ssn|tax_file_number)\\b", "classification": "OFFICIAL: Sensitive", "impactLevel": 2 },
+    { "id": "data.health", "kind": "health information", "pattern": "\\b(patient|diagnosis|medical_record|health_record|medicare_number|prescription)\\b", "classification": "PROTECTED", "impactLevel": 3 },
+    { "id": "data.financial", "kind": "financial or payment information", "pattern": "\\b(credit_card|card_number|bank_account|payment_method|iban|financial_record)\\b", "classification": "PROTECTED", "impactLevel": 3 },
+    { "id": "data.credentials", "kind": "credentials", "pattern": "\\b(password_hash|api_key|access_token|private_key|client_secret|credential)\\b", "classification": "OFFICIAL: Sensitive", "impactLevel": 2 },
+    { "id": "data.defence", "kind": "defence or law-enforcement information", "pattern": "\\b(defence|defense|law_enforcement|national_security|classified_intelligence|military_operation)\\b", "classification": "PROTECTED", "impactLevel": 3 },
+    { "id": "data.tracking", "kind": "geospatial tracking of people or assets", "pattern": "\\b(person_location|asset_tracking|device_location|user_location|live_location|personnel_tracking)\\b", "classification": "PROTECTED", "impactLevel": 3 },
+    { "id": "data.children", "kind": "children's information", "pattern": "\\b(child_profile|child_data|minor_age|parental_consent|student_record|children_data)\\b", "classification": "PROTECTED", "impactLevel": 3 },
+    { "id": "data.secret", "kind": "explicit high-impact national security marking", "pattern": "\\b(SECRET_CLASSIFIED|secret_clearance|secret_intelligence|serious_damage_national_security)\\b", "classification": "SECRET", "impactLevel": 4 },
+    { "id": "data.top-secret", "kind": "explicit extreme-impact national security marking", "pattern": "\\b(TOP_SECRET|top_secret_clearance|exceptionally_grave_damage)\\b", "classification": "TOP SECRET", "impactLevel": 5 }
+  ]
+}

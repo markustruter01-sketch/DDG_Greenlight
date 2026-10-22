@@ -1,0 +1,17 @@
+{
+  "name": "@workspace/greenlight-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Greenlight deterministic assessment engine, derived from CrossCheck.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server/standalone.mjs",
+    "test": "node --test \"engine/*.test.mjs\" \"server/*.test.mjs\" \"catalogues/*.test.mjs\"",
+    "build:catalogues": "node tools/build-catalogues.mjs",
+    "check:catalogues": "node tools/build-catalogues.mjs --check",
+    "assess": "node tools/assess-dir.mjs"
+  }
+}
