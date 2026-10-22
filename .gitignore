@@ -84,3 +84,4 @@ Thumbs.db
 replit.md
 .config/
 .agents/
+!.env.example
