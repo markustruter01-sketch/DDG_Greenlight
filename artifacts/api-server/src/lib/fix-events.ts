@@ -48,6 +48,9 @@ export interface FixRecording {
   outcome: { before: Record<string, number>; after: Record<string, number>; verdictBefore: string; verdictAfter: string };
 }
 
+/** A FixEvent without its timestamp; distributive so each variant keeps its own fields. */
+export type FixInput = FixEvent extends infer E ? (E extends FixEvent ? Omit<E, "at"> & { at?: number } : never) : never;
+
 /** Builds a unified-diff style hunk for the console from a before/after pair (bounded). */
 export function hunkFor(before: string, after: string, maxLines = 60): { hunk: string; added: number; removed: number } {
   const a = before.split("\n"), b = after.split("\n");
@@ -81,7 +84,7 @@ export class FixSession {
   private listeners = new Set<(e: FixEvent) => void>();
   closed = false;
   constructor(readonly id: string, private readonly recorder?: (e: FixEvent) => void) {}
-  emit(e: Omit<FixEvent, "at"> & { at?: number }) {
+  emit(e: FixInput) {
     const event = { ...e, at: e.at ?? Date.now() - this.startedAt } as FixEvent;
     this.events.push(event);
     this.recorder?.(event);

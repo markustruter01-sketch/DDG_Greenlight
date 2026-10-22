@@ -88,7 +88,7 @@ export async function runFixAgent({ root, wave, packages, session, snapshots, bl
         session.emit({ type: "tool", tool, path: relative || undefined, detail: tool === "Grep" || tool === "Glob" ? String(input.pattern || "") : undefined });
         if (tool === "Edit" || tool === "Write") {
           // Report the hunk once the tool has run: compare the file after a tick.
-          pending.push(new Promise(resolve => setTimeout(async () => {
+          pending.push(new Promise<void>(resolve => setTimeout(async () => {
             try {
               const now = await fs.readFile(resolved, "utf8");
               const was = snapshots.get(relative) ?? "";
