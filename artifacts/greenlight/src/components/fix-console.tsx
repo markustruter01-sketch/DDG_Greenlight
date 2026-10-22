@@ -130,7 +130,8 @@ export function FixConsole({ source, project, wave, onExit }: { source: ConsoleS
   const progress = progressOf(view, now, replay ? total : undefined);
   const pct = Math.round(progress * 100);
   const remaining = replay ? total - now : view.done ? 0 : Math.max(0, (now / Math.max(progress, 0.02)) - now);
-  const banner = view.banner && now - view.banner.at < BANNER_MS ? view.banner : null;
+  const outcome = !!replay && !!view.done && now >= total;
+  const banner = !outcome && view.banner && now - view.banner.at < BANNER_MS ? view.banner : null;
   const finished = !!view.done || view.stage === 'failed';
 
   // Console autoscroll, paused while the viewer hovers over it.
@@ -188,7 +189,7 @@ export function FixConsole({ source, project, wave, onExit }: { source: ConsoleS
         <ol className="fc-stages" aria-label="Stages">
           {STAGES.map((s, i) => {
             const idx = STAGE_ORDER.indexOf(s.id);
-            const state = view.stage === 'failed' ? (idx < stageIdx ? 'done' : 'off') : idx < stageIdx || view.done ? 'done' : idx === stageIdx ? 'on' : 'off';
+            const state = view.stage === 'failed' ? (idx < stageIdx ? 'done' : 'off') : idx < stageIdx ? 'done' : idx === stageIdx ? 'on' : 'off';
             return <li key={s.id} className={`fc-stage fc-stage-${state}`}><span>{i + 1}</span>{s.label}</li>;
           })}
         </ol>
@@ -301,7 +302,7 @@ export function FixConsole({ source, project, wave, onExit }: { source: ConsoleS
         </div>
       )}
 
-      {replay && view.done && now >= total && (
+      {outcome && replay && view.done && (
         <div className="fc-outcome glass" data-testid="outcome">
           <div className="lbl">Re-checked by the same rules · before → after</div>
           <div className="fc-outcome-grid">
