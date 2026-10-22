@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  checks: write
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -38,7 +39,19 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck every package
-        run: pnpm run typecheck
+        run: pnpm run typecheck 2>&1 | tee typecheck.log; test ${PIPESTATUS[0]} -eq 0
+
+      # The job log is not readable from the authoring session, so failures are
+      # also published as a check run whose text the REST API returns.
+      - name: Publish typecheck errors
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          grep -E "error TS|Error|error" typecheck.log | head -c 60000 > errors.txt || true
+          gh api -X POST "repos/${{ github.repository }}/check-runs" \
+            -f name="typecheck-errors" -f head_sha="${{ github.sha }}" -f status=completed -f conclusion=failure \
+            -f "output[title]=Typecheck errors" -F "output[summary]=@errors.txt" >/dev/null
 
       - name: Engine unit tests
         run: pnpm --filter @workspace/greenlight-engine test
@@ -51,7 +64,17 @@ jobs:
           PORT: '5173'
           BASE_PATH: '/'
           NODE_ENV: production
-        run: pnpm --filter @workspace/greenlight --filter @workspace/api-server run build
+        run: pnpm --filter @workspace/greenlight --filter @workspace/api-server run build 2>&1 | tee build.log; test ${PIPESTATUS[0]} -eq 0
+
+      - name: Publish build errors
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          grep -iE "error|failed" build.log | head -c 60000 > berrors.txt || true
+          gh api -X POST "repos/${{ github.repository }}/check-runs" \
+            -f name="build-errors" -f head_sha="${{ github.sha }}" -f status=completed -f conclusion=failure \
+            -f "output[title]=Build errors" -F "output[summary]=@berrors.txt" >/dev/null
 
       - name: Audit production dependencies
         run: pnpm audit --prod --audit-level=high
