@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
-import { Download, FileText, GitPullRequest, Package, FileCheck2 } from 'lucide-react';
+import { Download, FileText, GitPullRequest, Package, FileCheck2, MonitorPlay } from 'lucide-react';
 import {
   getGetAssessmentQueryKey,
   getListFixRunsQueryKey,
@@ -20,6 +20,23 @@ import { Dot, ErrorBlock, Skeleton } from '@/components/gl';
 import { useGate } from '@/hooks/use-gate';
 import { download, lineDiff, pc, reportUrl, tally } from '@/lib/greenlight';
 import { OrbitView } from '@/components/orbit-view';
+import { FixConsole } from '@/components/fix-console';
+import type { FixEvent, FixRecording } from '@/lib/fix-events';
+
+/** Events persisted on a finished fix run (added to the API after the client was generated). */
+const eventsOf = (fr: FixRun): FixEvent[] => ((fr as FixRun & { events?: FixEvent[] }).events ?? []);
+const readinessBy = (run: AssessmentRun) => Object.fromEntries(run.standards.map((s) => [s.short, s.readiness]));
+/** Turns a finished run plus its before/after assessments into a replayable recording. */
+function recordingOf(fr: FixRun, before: AssessmentRun, after?: AssessmentRun): FixRecording {
+  const events = eventsOf(fr);
+  const plan = events.find((e) => e.type === 'plan');
+  return {
+    version: 1, recordedAt: before.assessedAt, project: before.projectName, wave: fr.wave, model: 'Claude',
+    durationMs: events.length ? events[events.length - 1].at : 0,
+    packages: plan && plan.type === 'plan' ? plan.packages : [], events, changes: fr.changes,
+    outcome: { before: readinessBy(before), after: after ? readinessBy(after) : readinessBy(before), verdictBefore: before.verdict, verdictAfter: after?.verdict ?? before.verdict },
+  };
+}
 
 const DISABLED_MSG = 'Add an Anthropic API key to enable fixing';
 const WORKING = /run|pend|queue|start|prepar|generat|verif|appl|work|propos/i;
@@ -38,7 +55,7 @@ function Diff({ before, after }: { before: string; after: string }) {
   );
 }
 
-function FixRunCard({ fr, runId, baseline }: { fr: FixRun; runId: string; baseline: AssessmentRun }) {
+function FixRunCard({ fr, runId, baseline, onReplay }: { fr: FixRun; runId: string; baseline: AssessmentRun; onReplay: (rec: FixRecording) => void }) {
   const qc = useQueryClient();
   const approve = useApproveFix();
   const [picked, setPicked] = useState<Record<string, boolean>>({});
@@ -56,7 +73,10 @@ function FixRunCard({ fr, runId, baseline }: { fr: FixRun; runId: string; baseli
     <div className="glass space-y-4 p-5" data-testid={`card-fixrun-${fr.id}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="font-head text-xl">Wave {fr.wave} fix</div>
-        <Dot color={/fail|error/i.test(fr.status) ? '#FF5C6E' : WORKING.test(fr.status) ? '#F5C451' : '#4FD99A'} word={fr.status} />
+        <div className="flex items-center gap-2">
+          {eventsOf(fr).length > 0 && <button className="btn !px-2.5 !py-1.5 text-xs" onClick={() => onReplay(recordingOf(fr, baseline, after.data))} data-testid={`button-replay-${fr.id}`}><MonitorPlay size={14} /> Replay the session</button>}
+          <Dot color={/fail|error/i.test(fr.status) ? '#FF5C6E' : WORKING.test(fr.status) ? '#F5C451' : '#4FD99A'} word={fr.status} />
+        </div>
       </div>
       {fr.error && <Dot color="#FF5C6E" word={fr.error} />}
       <ol className="space-y-1 border-l pl-4 text-sm" style={{ borderColor: 'rgba(0,229,255,.4)' }} data-testid="timeline">
@@ -110,6 +130,9 @@ export default function Fix() {
   const q = useGetAssessment(id, { query: { enabled: !!id, queryKey: getGetAssessmentQueryKey(id) } });
   const [wave, setWave] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
+  // The live fix screen takes over while a run is in flight (or when replaying a finished one).
+  const [screen, setScreen] = useState<{ kind: 'live'; fixId: string } | { kind: 'replay'; recording: FixRecording } | null>(null);
+  const [dismissed, setDismissed] = useState<string | null>(null);
   const start = useStartFix();
   const fixes = useListFixRuns(id, {
     query: {
@@ -129,6 +152,10 @@ export default function Fix() {
   const err = start.error as { message?: string } | null;
   const waveFixes = (fixes.data ?? []).filter((fix) => fix.wave === wave);
   const selectedFix = waveFixes[waveFixes.length - 1];
+  const inFlight = (fixes.data ?? []).find((f) => WORKING.test(f.status) && !AWAITING.test(f.status) && !f.error);
+  useEffect(() => {
+    if (inFlight && !screen && dismissed !== inFlight.id) setScreen({ kind: 'live', fixId: inFlight.id });
+  }, [inFlight?.id, screen, dismissed]);
   const verificationId = selectedFix?.verificationRunId;
   const after = useGetAssessment(verificationId ?? '', {
     query: { enabled: !!verificationId, queryKey: getGetAssessmentQueryKey(verificationId ?? '') },
@@ -141,7 +168,9 @@ export default function Fix() {
 
   return (
     <Shell runId={id} bg="glacier-night.webp" runMeta={run ? `${run.projectName} · ${new Date(run.assessedAt).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' })}` : undefined}>
-      {q.isLoading ? <div className="flex flex-1 items-center p-8"><Skeleton className="h-full w-full" /></div> : q.isError || !run ? <div className="flex flex-1 items-center justify-center"><ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /></div> : (
+      {q.isLoading ? <div className="flex flex-1 items-center p-8"><Skeleton className="h-full w-full" /></div> : q.isError || !run ? <div className="flex flex-1 items-center justify-center"><ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /></div> : screen ? (
+        <FixConsole key={screen.kind === 'live' ? screen.fixId : 'replay'} source={screen} project={run.projectName} wave={screen.kind === 'replay' ? screen.recording.wave : wave} onExit={() => { if (screen.kind === 'live') setDismissed(screen.fixId); setScreen(null); qc.invalidateQueries({ queryKey: getListFixRunsQueryKey(id) }); }} />
+      ) : (
         <div className="fix-layout">
           <section className="glass fix-status">
             <div className="min-w-0">
@@ -160,6 +189,7 @@ export default function Fix() {
 
           <div className="fix-controls">
             {run.waves.map((item) => <button key={item.number} onClick={() => { setWave(item.number); setPicked(null); }} className="lbl rounded-full border px-3 py-1.5 !text-[10px]" style={{ borderColor: wave === item.number ? '#00E5FF' : 'rgba(124,201,232,.3)', background: wave === item.number ? 'rgba(0,229,255,.13)' : 'rgba(11,31,42,.46)' }} data-testid={`button-wave-${item.number}`}>Wave {item.number} · {item.fixCount}</button>)}
+            {inFlight && <button className="btn !px-3 !py-1.5 text-xs" onClick={() => { setDismissed(null); setScreen({ kind: 'live', fixId: inFlight.id }); }} data-testid="button-open-console"><MonitorPlay size={14} /> Watch the fix</button>}
             <Link href={`/results/${id}`} className="btn ml-auto !px-3 !py-1.5 text-xs" data-testid="link-back-results">Back to results</Link>
           </div>
 
@@ -174,7 +204,7 @@ export default function Fix() {
                   </div>)}
                   {!w.fixes.length && <p className="text-sm text-[#CFE3EE]">No work packages in this wave.</p>}
                 </div>}
-                {fixes.isLoading ? <Skeleton className="h-24" /> : fixes.isError ? <ErrorBlock message="Fix runs unavailable." onRetry={() => fixes.refetch()} /> : waveFixes.length ? waveFixes.map((fr) => <FixRunCard key={fr.id} fr={fr} runId={id} baseline={run} />) : <div className="tile p-3 text-sm text-[#CFE3EE]">No fix run for this wave yet.</div>}
+                {fixes.isLoading ? <Skeleton className="h-24" /> : fixes.isError ? <ErrorBlock message="Fix runs unavailable." onRetry={() => fixes.refetch()} /> : waveFixes.length ? waveFixes.map((fr) => <FixRunCard key={fr.id} fr={fr} runId={id} baseline={run} onReplay={(recording) => setScreen({ kind: 'replay', recording })} />) : <div className="tile p-3 text-sm text-[#CFE3EE]">No fix run for this wave yet.</div>}
               </div>
             </section>
 
@@ -210,7 +240,7 @@ export default function Fix() {
               {base && <div className="lbl mt-2 flex-none !text-[9px]">Baseline · {base.failed} failing · {base.partial} partial · {base.blocking} must-fix</div>}
               <div className="mt-3 flex flex-none flex-wrap gap-2">
                 <button className="btn !px-2.5 !py-2 text-xs" onClick={() => download(`${import.meta.env.BASE_URL}api/greenlight/runs/${run.id}/reports/fix-prompt?format=md`)} data-testid="button-download-prompt"><FileText size={14} /> Fix prompt (.md)</button>
-                <button className="btn btn-primary !px-2.5 !py-2 text-xs" disabled={!enabled || !wave || start.isPending} onClick={() => gated(() => start.mutate({ id, data: { wave } }, { onSuccess: () => qc.invalidateQueries({ queryKey: getListFixRunsQueryKey(id) }) }))} data-testid="button-start-fix">
+                <button className="btn btn-primary !px-2.5 !py-2 text-xs" disabled={!enabled || !wave || start.isPending} onClick={() => gated(() => start.mutate({ id, data: { wave } }, { onSuccess: (fr) => { setDismissed(null); setScreen({ kind: 'live', fixId: fr.id }); qc.invalidateQueries({ queryKey: getListFixRunsQueryKey(id) }); } }))} data-testid="button-start-fix">
                   {start.isPending ? 'Starting' : enabled && !signedIn ? 'Sign in to fix' : 'Start AI fix'}
                 </button>
               </div>

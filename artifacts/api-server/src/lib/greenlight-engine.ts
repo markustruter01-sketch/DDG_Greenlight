@@ -120,7 +120,11 @@ export async function assessEvidence(held: any, options: any) {
       readiness: Object.fromEntries(after.standards.map((s: any) => [s.standard, Math.round(s.readiness * 100)])),
       statuses: Object.fromEntries(after.standards.flatMap((s: any) => s.items.filter((i: any) => !i.out).map((i: any) => [`${s.standard}|${i.id}`, i.status || "UN"]))),
       fixes: w.fixes.map((f: any) => ({ key: f.key, title: f.title, kind: f.kind, theme: f.theme, acceptance: f.acceptance,
-        itemKeys: f.items.map((i: any) => `${i.standard}|${i.id}`) })),
+        itemKeys: f.items.map((i: any) => `${i.standard}|${i.id}`),
+        // What the fix console shows while Claude works: the clauses it closes, what the check found and where.
+        items: f.items.map((i: any) => ({ standard: i.standard, short: i.short, id: i.id, title: i.title, blocking: !!i.blocking })),
+        found: f.found || undefined,
+        where: (f.where || []).map((r: any) => (r.line ? `${r.path}:${r.line}` : r.path || "")).filter(Boolean) })),
     };
   });
   const active = standards.filter((s: any) => !s.verdict.startsWith("Not applicable"));

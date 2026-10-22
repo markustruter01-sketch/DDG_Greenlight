@@ -1,0 +1,109 @@
+name: Record a fix session
+
+# Runs the real "Fix it with Claude" loop against a public repository on an
+# isolated runner and uploads the recording the app replays as a rehearsed
+# session. Checking before and after is the deterministic engine; only the
+# fixing step calls the model. Needs the ANTHROPIC_API_KEY repository secret.
+
+on:
+  workflow_dispatch:
+    inputs:
+      subject:
+        description: Repository to fix (owner/name)
+        default: pierretruter07-sudo/gods-eye-view
+        required: true
+      ref:
+        description: Branch or tag of the subject
+        default: main
+        required: true
+      project:
+        description: Project name shown on screen
+        default: God's Eye View
+        required: true
+      standards:
+        description: Catalogue ids, comma-separated
+        default: ed153,ism-e8
+        required: true
+      wave:
+        description: Wave number to fix
+        default: '3'
+        required: true
+      run_tests:
+        description: Run the subject's npm test after fixing
+        type: boolean
+        default: true
+      allow_all_dirs:
+        description: Let Claude edit engine/ and vendor/ folders of the subject
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    name: Fix wave ${{ inputs.wave }} of ${{ inputs.subject }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out Greenlight
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check out the subject
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.subject }}
+          ref: ${{ inputs.ref }}
+          path: subject
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the API (includes the recorder)
+        env:
+          NODE_ENV: production
+        run: pnpm --filter @workspace/api-server run build
+
+      - name: Install the subject's dependencies (for its tests)
+        if: ${{ inputs.run_tests }}
+        working-directory: subject
+        run: |
+          if [ -f package-lock.json ]; then npm ci --ignore-scripts; elif [ -f package.json ]; then npm install --ignore-scripts; fi
+
+      - name: Record the fix
+        working-directory: artifacts/api-server
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GREENLIGHT_FIX_MODEL: ${{ vars.GREENLIGHT_FIX_MODEL || 'claude-sonnet-4-6' }}
+          GREENLIGHT_FIX_MAX_TURNS: '60'
+          GREENLIGHT_FIX_BUDGET_USD: '8'
+        run: |
+          node dist/tools/record-fix.mjs \
+            --repo "$GITHUB_WORKSPACE/subject" \
+            --project "${{ inputs.project }}" \
+            --standards "${{ inputs.standards }}" \
+            --wave "${{ inputs.wave }}" \
+            --out "$GITHUB_WORKSPACE/out/recording.json" \
+            ${{ inputs.run_tests && '--test' || '' }} \
+            ${{ inputs.allow_all_dirs && '--allow-all-dirs' || '' }}
+
+      - name: Upload the recording
+        uses: actions/upload-artifact@v4
+        with:
+          name: fix-recording-wave-${{ inputs.wave }}
+          path: out/
+          retention-days: 30

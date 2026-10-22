@@ -11,6 +11,7 @@ import Welcome from '@/pages/welcome';
 import Start from '@/pages/start';
 import Results from '@/pages/results';
 import Fix from '@/pages/fix';
+import Replay from '@/pages/replay';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 
 const queryClient = new QueryClient();
@@ -111,6 +112,7 @@ function Providers() {
               <Route path="/sign-up/*?">{() => <Start auth="up" />}</Route>
               <Route path="/results/:id" component={Results} />
               <Route path="/fix/:id" component={Fix} />
+              <Route path="/replay/:name" component={Replay} />
               <Route component={NotFound} />
             </Switch>
           </RoutedErrorBoundary>

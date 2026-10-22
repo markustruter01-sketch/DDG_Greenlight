@@ -382,10 +382,22 @@ components:
         status: { type: string }
         timeline: { type: array, items: { type: string } }
         changes: { type: array, items: { $ref: "#/components/schemas/FileChange" } }
+        events:
+          type: array
+          description: Console events recorded during the run (see FixEvent); present once the run has finished
+          items: { $ref: "#/components/schemas/FixEvent" }
         verificationRunId: { type: string }
         downloadUrl: { type: string }
         pullRequestUrl: { type: string }
         error: { type: string }
+    FixEvent:
+      type: object
+      description: One thing that happened during a fix run; `at` is milliseconds since the run started
+      required: [at, type]
+      additionalProperties: true
+      properties:
+        at: { type: integer }
+        type: { type: string, enum: [plan, stage, note, package, tool, edit, test, cost, done] }
     FileChange:
       type: object
       required: [file, before, after, approved]

@@ -6,6 +6,7 @@ import { catalogues, furtherTesting, engine, classifications } from "../lib/gree
 import { getRun, listProjects, createFromGithub, createFromZip, updateRun, compareProject, fixRuns, seedDemo } from "../lib/greenlight-store";
 import { listReports, generateReport, mime, readObject } from "../lib/greenlight-reports";
 import { startFix, approveFix, sandboxStatus } from "../lib/greenlight-fixes";
+import { getSession } from "../lib/fix-events";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -129,6 +130,62 @@ router.post(`${prefix}/fixes/:id/approve`, async (req, res) => {
   if (!f) throw Object.assign(new Error("Fix run not found"), { status: 404 });
   await accessRun(req, f.runId, true);
   res.json(await approveFix(id, ApproveFixBody.parse(req.body)));
+});
+/**
+ * Live event stream for the fix console (server-sent events). A viewer who
+ * arrives late gets the whole history first, then live events. Once the run
+ * has finished and the in-memory session is gone, the events persisted on the
+ * fix row are sent instead, followed by `end`.
+ */
+router.get(`${prefix}/fixes/:id/events`, async (req, res) => {
+  requireUser(req);
+  const id = String(req.params.id);
+  const [row] = await db.select().from(greenlightFixes).where(eq(greenlightFixes.id, id));
+  if (!row) throw Object.assign(new Error("Fix run not found"), { status: 404 });
+  await accessRun(req, row.runId);
+  res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive", "X-Accel-Buffering": "no" });
+  const send = (event: string, data: unknown) => { res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`); };
+  const session = getSession(id);
+  if (!session || session.closed) {
+    for (const e of ((row.result as any)?.events ?? session?.events ?? [])) send("fix", e);
+    send("end", { id });
+    res.end();
+    return;
+  }
+  const unsubscribe = session.subscribe(e => {
+    send("fix", e);
+    if (e.type === "done" || (e.type === "stage" && e.stage === "failed")) { send("end", { id }); res.end(); }
+  });
+  const ping = setInterval(() => res.write(": ping\n\n"), 15_000);
+  req.on("close", () => { clearInterval(ping); unsubscribe(); });
+});
+/**
+ * A finished fix run as a self-contained recording (events, changes, before/after
+ * readiness) for publishing with the app as a rehearsed replay.
+ */
+router.get(`${prefix}/fixes/:id/recording`, async (req, res) => {
+  requireUser(req);
+  const id = String(req.params.id);
+  const [row] = await db.select().from(greenlightFixes).where(eq(greenlightFixes.id, id));
+  if (!row) throw Object.assign(new Error("Fix run not found"), { status: 404 });
+  const before = await accessRun(req, row.runId);
+  const result = row.result as any;
+  const events = result.events ?? [];
+  const after = result.verificationRunId ? await accessRun(req, String(result.verificationRunId)).catch(() => null) : null;
+  const readiness = (r: any) => Object.fromEntries((r?.result?.standards ?? []).map((s: any) => [s.short, s.readiness]));
+  const plan = events.find((e: any) => e.type === "plan");
+  res.json({
+    version: 1,
+    recordedAt: row.createdAt ?? new Date().toISOString(),
+    project: before.result?.projectName ?? before.result?.name ?? "",
+    wave: result.wave,
+    model: process.env.GREENLIGHT_FIX_MODEL || "claude-sonnet-4-6",
+    durationMs: events.length ? events[events.length - 1].at : 0,
+    packages: plan?.packages ?? [],
+    events,
+    changes: (result.changes ?? []).map((c: any) => ({ file: c.file, before: c.before, after: c.after })),
+    outcome: { before: readiness(before), after: after ? readiness(after) : readiness(before), verdictBefore: before.result?.verdict ?? "", verdictAfter: after?.result?.verdict ?? before.result?.verdict ?? "" },
+  });
 });
 router.get(`${prefix}/fixes/:id/download`, async (req, res) => {
   const [row] = await db.select().from(greenlightFixes).where(eq(greenlightFixes.id, String(req.params.id)));
