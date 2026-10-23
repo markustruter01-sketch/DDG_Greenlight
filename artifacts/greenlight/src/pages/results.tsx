@@ -430,7 +430,7 @@ export default function Results() {
   }, [tourStatus, tourIndex]);
 
   return (
-    <Shell runId={id} bg="glacier-ice.webp" tourHeaderHighlight={tourIndex === 8 && !['closed', 'prompt'].includes(tourStatus)} runMeta={run ? `${run.projectName} · ${new Date(run.assessedAt).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' })}${fileCount == null ? '' : ` · ${fileCount} files`}` : undefined}>
+    <Shell runId={id} tourHeaderHighlight={tourIndex === 8 && !['closed', 'prompt'].includes(tourStatus)} runMeta={run ? `${run.projectName} · ${new Date(run.assessedAt).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' })}${fileCount == null ? '' : ` · ${fileCount} files`}` : undefined}>
       {q.isLoading || !run || !counts ? (
         q.isError ? <div className="flex flex-1 items-center justify-center"><ErrorBlock message="This assessment could not be loaded." onRetry={() => q.refetch()} /></div> :
           <div className="grid flex-1 gap-4 px-4 py-4 lg:grid-cols-[214px_1fr]"><Skeleton className="h-24 lg:col-span-2" /><Skeleton className="h-full" /><Skeleton className="h-full" /></div>

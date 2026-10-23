@@ -12,6 +12,7 @@ import Start from '@/pages/start';
 import Results from '@/pages/results';
 import Fix from '@/pages/fix';
 import Replay from '@/pages/replay';
+import { SiteLoader } from '@/components/site-loader';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 
 const queryClient = new QueryClient();
@@ -116,6 +117,7 @@ function Providers() {
               <Route component={NotFound} />
             </Switch>
           </RoutedErrorBoundary>
+          <SiteLoader />
           <Toaster />
         </TooltipProvider>
       </QueryClientProvider>

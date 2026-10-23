@@ -535,9 +535,10 @@ select.field option{background:#0B1F2A}
 .tp-box{fill:none;stroke:#00E5FF;stroke-width:2;opacity:0;animation:tp-fade .25s ease-out .6s forwards,tp-pulse 1.6s ease-in-out .85s infinite}
 .tp-ring{fill:rgba(0,229,255,.12);stroke:#00E5FF;stroke-width:2.5}
 .tp-ping{fill:none;stroke:#00E5FF;stroke-width:2;animation:tp-ping 1.4s ease-out infinite;transform-box:fill-box;transform-origin:center}
-.tp-label rect{fill:rgba(6,19,26,.92);stroke:rgba(0,229,255,.7);stroke-width:1.5}
-.tp-label text{fill:#F7FBFF;font:600 12.5px/1 "JetBrains Mono",monospace;letter-spacing:.08em}
-.tp-label{opacity:0;animation:tp-fade .3s ease-out .65s forwards}
+.tp-label{position:fixed;z-index:91;pointer-events:none;white-space:nowrap;padding:7px 13px;border-radius:999px;background:rgba(6,19,26,.92);border:1.5px solid rgba(0,229,255,.7);box-shadow:0 0 18px rgba(0,229,255,.25);color:#F7FBFF;font:600 12.5px/1 "JetBrains Mono",monospace;letter-spacing:.08em;opacity:0;animation:tp-fade .3s ease-out .65s forwards}
+.tp-label-start{transform:translateY(-50%)}
+.tp-label-end{transform:translate(-100%,-50%)}
+.tp-label-middle{transform:translate(-50%,-50%)}
 @keyframes tp-draw{to{stroke-dashoffset:0}}
 @keyframes tp-flow{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
 @keyframes tp-fade{from{opacity:0}to{opacity:1}}
@@ -692,3 +693,10 @@ select.field option{background:#0B1F2A}
 @media (max-width:1100px){.fc{padding:6px 8px}.fc-body{grid-template-columns:1fr;grid-template-rows:minmax(120px,.7fr) minmax(200px,1.4fr) minmax(120px,.8fr)}.fc-stages{display:none}.fc-pct{font-size:34px;min-width:80px}.fc-banner{min-width:0;width:92%}}
 @media (prefers-reduced-motion:reduce){.fc-line,.fc-banner,.fc-spin,.fc-badge-live,.fc-cursor .fc-txt{animation:none}.fc-banner{opacity:1}}
 .explainer-video{display:block;width:100%;aspect-ratio:16/9;border-radius:14px;background:#000;border:1px solid rgba(124,201,232,.3);box-shadow:0 18px 60px rgba(0,0,0,.5)}
+/* First-visit loader: the transparent DDG animation over the landscape, then a fade to the app */
+.site-loader{position:fixed;inset:0;z-index:200;background:#06131A;opacity:1;transition:opacity .7s ease}
+.site-loader.is-fading{opacity:0;pointer-events:none}
+.site-loader-bg{position:absolute;inset:0;background-size:cover;background-position:center 38%;filter:brightness(.8)}
+.site-loader-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:transparent}
+.site-loader-skip{position:absolute;right:max(20px,env(safe-area-inset-right,0px));bottom:max(20px,env(safe-area-inset-bottom,0px));padding:8px 14px;border-radius:999px;border:1px solid rgba(124,201,232,.35);background:rgba(6,19,26,.55);color:#CFE3EE;cursor:pointer;opacity:0;animation:tp-fade .4s ease-out 1.2s forwards}
+.site-loader-skip:hover{border-color:#00E5FF;color:#F7FBFF}

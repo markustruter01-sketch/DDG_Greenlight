@@ -117,8 +117,7 @@ export function TourPointer({ target, targetKey }: { target: PointerTarget | nul
   const a1 = g.angle + Math.PI - 0.42, a2 = g.angle + Math.PI + 0.42;
   const tip = `M ${g.e.x + Math.cos(a1) * head} ${g.e.y + Math.sin(a1) * head} L ${g.e.x} ${g.e.y} L ${g.e.x + Math.cos(a2) * head} ${g.e.y + Math.sin(a2) * head}`;
   const labelText = target.label?.toUpperCase();
-  const labelW = labelText ? labelText.length * 7.6 + 22 : 0;
-  return (
+  return (<>
     <svg className="tour-pointer" aria-hidden="true">
       <defs>
         <linearGradient id="tp-grad" gradientUnits="userSpaceOnUse" x1={g.o.x} y1={g.o.y} x2={g.e.x} y2={g.e.y}>
@@ -141,13 +140,11 @@ export function TourPointer({ target, targetKey }: { target: PointerTarget | nul
           <circle cx={g.dot.x} cy={g.dot.y} r="15" className="tp-ring" />
           <circle cx={g.dot.x} cy={g.dot.y} r="15" className="tp-ping" />
         </>}
-        {g.label && labelText && (
-          <g className="tp-label">
-            <rect x={g.label.anchor === 'end' ? g.label.x - labelW : g.label.anchor === 'middle' ? g.label.x - labelW / 2 : g.label.x} y={g.label.y - 15} width={labelW} height="30" rx="15" />
-            <text x={g.label.anchor === 'end' ? g.label.x - 11 : g.label.anchor === 'middle' ? g.label.x : g.label.x + 11} y={g.label.y + 4.5} textAnchor={g.label.anchor}>{labelText}</text>
-          </g>
-        )}
       </g>
     </svg>
-  );
+    {g.label && labelText && (
+      // An HTML pill, so the border always fits the text whatever the font metrics.
+      <div key={`${targetKey}-label`} className={`tp-label tp-label-${g.label.anchor}`} style={{ left: g.label.x, top: g.label.y }} aria-hidden="true">{labelText}</div>
+    )}
+  </>);
 }

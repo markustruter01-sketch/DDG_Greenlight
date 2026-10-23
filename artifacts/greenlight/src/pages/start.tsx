@@ -104,7 +104,7 @@ export default function Start({ auth }: { auth?: 'in' | 'up' }) {
   };
 
   return (
-    <Shell bg="glacier-night.webp">
+    <Shell>
       <div className="start-layout">
         <section className="glass start-form">
           <div className="flex flex-wrap items-center justify-between gap-2">

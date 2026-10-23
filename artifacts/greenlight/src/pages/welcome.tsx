@@ -20,7 +20,7 @@ const STEPS = [
 export default function Welcome() {
   const [watch, setWatch] = useState(false);
   return (
-    <Shell bg="glacier-ice.webp" chrome={false}>
+    <Shell chrome={false}>
       <div className="welcome-layout" data-testid="welcome-page">
         <div className="mx-auto flex items-center gap-3 rounded-full border px-5 py-2 glass" style={{ borderColor: 'rgba(124,201,232,.4)' }}>
           <Logo />

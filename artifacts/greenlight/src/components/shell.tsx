@@ -24,7 +24,7 @@ export function Logo() {
 export function Shell({
   children,
   runId,
-  bg = 'glacier-night.webp',
+  bg = 'vestrahorn.webp',
   chrome = true,
   runMeta,
   tourHeaderHighlight = false,
@@ -51,7 +51,7 @@ export function Shell({
     <div className="app-shell relative flex flex-col">
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center"
-        style={{ backgroundColor: '#06131A', backgroundImage: `linear-gradient(180deg,rgba(6,19,26,.5),rgba(6,19,26,.35) 50%,rgba(6,19,26,.6)),url(${base}${bg})` }}
+        style={{ backgroundColor: '#06131A', backgroundImage: `linear-gradient(180deg,rgba(6,19,26,.55),rgba(6,19,26,.42) 45%,rgba(6,19,26,.72)),url(${base}${bg})`, backgroundPosition: 'center 38%' }}
       />
       {chrome && <header className="screen-header glass relative z-20 flex items-center justify-between gap-3">
         <Link href="/" className="flex items-center gap-3" data-testid="link-home">

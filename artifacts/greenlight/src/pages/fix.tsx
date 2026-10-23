@@ -167,7 +167,7 @@ export default function Fix() {
   const selectedFinding = after.data?.findings.find((finding) => finding.key === picked) ?? run?.findings.find((finding) => finding.key === picked);
 
   return (
-    <Shell runId={id} bg="glacier-night.webp" runMeta={run ? `${run.projectName} · ${new Date(run.assessedAt).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' })}` : undefined}>
+    <Shell runId={id} runMeta={run ? `${run.projectName} · ${new Date(run.assessedAt).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' })}` : undefined}>
       {q.isLoading ? <div className="flex flex-1 items-center p-8"><Skeleton className="h-full w-full" /></div> : q.isError || !run ? <div className="flex flex-1 items-center justify-center"><ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /></div> : screen ? (
         <FixConsole key={screen.kind === 'live' ? screen.fixId : 'replay'} source={screen} project={run.projectName} wave={screen.kind === 'replay' ? screen.recording.wave : wave} onExit={() => { if (screen.kind === 'live') setDismissed(screen.fixId); setScreen(null); qc.invalidateQueries({ queryKey: getListFixRunsQueryKey(id) }); }} />
       ) : (
