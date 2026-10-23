@@ -16,6 +16,7 @@ import { CompareModal } from '@/components/compare';
 import { TourPointer, type PointerTarget } from '@/components/tour-pointer';
 import { TourProgress } from '@/components/tour-progress';
 import { createNarrator } from '@/lib/narrator';
+import { useCaptionSlot } from '@/lib/caption-slot';
 import { ANNUNCIATORS, findingsFor, pc, statusMap, tally, tone, waveOf } from '@/lib/greenlight';
 
 const RING_COLORS = ['#7CC9E8', '#00E5FF', '#CFE3EE'];
@@ -80,6 +81,9 @@ export default function Results() {
     try { return window.localStorage.getItem(VOICE_KEY) !== 'off'; } catch { return true; }
   });
   const narrator = useMemo(() => createNarrator(), []);
+  const tourActiveNow = ['playing', 'paused', 'complete'].includes(tourStatus) && tourIndex >= 0;
+  // The caption keeps out of the way of whatever the arrow points at.
+  const captionSlot = useCaptionSlot(tourActiveNow, pointer?.target ?? null, 'bc', `${tourRunId}:${tourIndex}`);
   const orbitControls = useRef<OrbitControlApi | null>(null);
   const savedTour = useRef<SavedTourState | null>(null);
   const tourDeadline = useRef(0);
@@ -504,7 +508,7 @@ export default function Results() {
                   </div>
                 }
                 tourCaption={tourIndex >= 0 && ['playing', 'paused', 'complete'].includes(tourStatus) ? (
-                  <div className={`glass orbit-tour-caption ${tourIndex === 7 ? 'tour-caption-left' : ''}`} data-testid="tour-caption">
+                  <div className={`glass orbit-tour-caption cap-${captionSlot}`} data-slot={captionSlot} data-testid="tour-caption">
                     <div className="tour-cap-kicker lbl">{tourIndex + 1} / {TOUR_STEPS.length} · Guided tour</div>
                     <div className="tour-cap-title font-head">{TOUR_STEPS[tourIndex].title}</div>
                     <p className="tour-cap-body">{TOUR_STEPS[tourIndex].body}</p>

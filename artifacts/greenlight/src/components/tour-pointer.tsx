@@ -53,12 +53,15 @@ function measure(target: PointerTarget): Geometry | null {
   const vw = window.innerWidth, vh = window.innerHeight;
   let o: { x: number; y: number };
   if (cap && cap.width) {
-    const above = ty < cap.top - 40;
-    const x = Math.max(cap.left + 36, Math.min(cap.right - 36, tx));
-    if (above) o = { x, y: cap.top - 4 };
-    // Targets beside or just below the caption (the control row): leave from the
-    // caption's nearer side so the arrow sweeps round instead of being a stub.
-    else o = { x: tx < cap.left + cap.width / 2 ? cap.left - 4 : cap.right + 4, y: cap.top + cap.height * 0.35 };
+    // Leave from the caption edge that faces the target: top or bottom when the
+    // target is clearly above or below, otherwise the nearer side. A target that
+    // sits inside the caption's own column (the control row under it) gets the
+    // side exit too, so the arrow sweeps round instead of stubbing through text.
+    const ccx = cap.left + cap.width / 2, ccy = cap.top + cap.height / 2;
+    const dx = tx - ccx, dy = ty - ccy;
+    const vertical = Math.abs(dy) > cap.height / 2 + 40 && Math.abs(dx) < cap.width / 2 + 60;
+    if (vertical) o = { x: Math.max(cap.left + 36, Math.min(cap.right - 36, tx)), y: dy < 0 ? cap.top - 4 : cap.bottom + 4 };
+    else o = { x: dx < 0 ? cap.left - 4 : cap.right + 4, y: Math.max(cap.top + 18, Math.min(cap.bottom - 18, ty)) };
   } else o = { x: vw / 2, y: vh * 0.72 };
   // Stop short of the target so the head does not cover it.
   let e: { x: number; y: number };

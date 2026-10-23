@@ -509,17 +509,23 @@ select.field option{background:#0B1F2A}
 .orbit-zoom{display:flex;align-items:center;gap:4px}
 .orbit-tour-shade{position:absolute;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(3,10,14,.36);backdrop-filter:blur(3px)}
 .orbit-tour-card{width:min(420px,calc(100% - 28px));padding:20px;background:rgba(8,24,33,.94);text-align:left}
-.orbit-tour-caption{position:absolute;left:50%;bottom:14px;z-index:30;width:min(1040px,calc(100% - 32px));transform:translateX(-50%);padding:18px 24px 14px;background:rgba(6,19,26,.9);border-color:rgba(0,229,255,.45);box-shadow:0 18px 60px rgba(0,0,0,.55),0 0 40px rgba(0,229,255,.12);animation:tour-cap-in .45s ease-out}
-.tour-cap-kicker{color:#00E5FF!important;font-size:12px}
-.tour-cap-title{margin-top:4px;font-size:clamp(22px,2.3vw,34px);font-weight:600;line-height:1.15;color:#F7FBFF;text-wrap:balance}
-.tour-cap-body{margin-top:8px;font-size:clamp(16px,1.45vw,22px);line-height:1.45;color:#E3F1F8;max-width:62ch;text-wrap:pretty}
-.tour-caption-left{left:16px;transform:none;width:min(720px,calc(100% - 492px))}
+/* The caption: half-size, and it glides to whichever of six slots keeps clear of the arrow's target */
+.orbit-tour-caption{position:absolute;z-index:30;width:min(560px,calc(100% - 28px));padding:12px 16px 10px;background:rgba(6,19,26,.9);border-color:rgba(0,229,255,.45);box-shadow:0 14px 48px rgba(0,0,0,.55),0 0 32px rgba(0,229,255,.12);animation:tour-cap-in .45s ease-out;transition:left .6s cubic-bezier(.4,0,.2,1),right .6s cubic-bezier(.4,0,.2,1),top .6s cubic-bezier(.4,0,.2,1),bottom .6s cubic-bezier(.4,0,.2,1),transform .6s cubic-bezier(.4,0,.2,1)}
+.orbit-tour-caption.cap-bc{left:50%;right:auto;bottom:14px;top:auto;transform:translateX(-50%)}
+.orbit-tour-caption.cap-tc{left:50%;right:auto;top:14px;bottom:auto;transform:translateX(-50%)}
+.orbit-tour-caption.cap-bl{left:14px;right:auto;bottom:14px;top:auto;transform:none}
+.orbit-tour-caption.cap-br{left:auto;right:14px;bottom:14px;top:auto;transform:none}
+.orbit-tour-caption.cap-tl{left:14px;right:auto;top:14px;bottom:auto;transform:none}
+.orbit-tour-caption.cap-tr{left:auto;right:14px;top:14px;bottom:auto;transform:none}
+.tour-cap-kicker{color:#00E5FF!important;font-size:10px}
+.tour-cap-title{margin-top:2px;font-size:clamp(15px,1.15vw,18px);font-weight:600;line-height:1.2;color:#F7FBFF;text-wrap:balance}
+.tour-cap-body{margin-top:5px;font-size:clamp(12px,.85vw,14px);line-height:1.45;color:#E3F1F8;max-width:62ch;text-wrap:pretty}
 .orbit-tour-caption-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.orbit-tour-caption-controls{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:14px}
-.tour-cap-btn{padding:.5rem .85rem!important;font-size:13px!important}
+.orbit-tour-caption-controls{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:10px}
+.tour-cap-btn{padding:.35rem .6rem!important;font-size:11px!important;gap:.3rem!important}
+.tour-cap-btn svg{width:13px;height:13px}
 .tour-cap-btn.is-on{border-color:#00E5FF;color:#00E5FF}
-@keyframes tour-cap-in{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
-.tour-caption-left{animation:none}
+@keyframes tour-cap-in{from{opacity:0}to{opacity:1}}
 /* Tour arrow: a glowing DDG-cyan line from the caption to what it is about */
 .tour-pointer{position:fixed;inset:0;width:100vw;height:100vh;z-index:90;pointer-events:none;overflow:visible}
 .tp-draw{animation:tp-fade .35s ease-out}
@@ -586,13 +592,13 @@ select.field option{background:#0B1F2A}
   .orbit-controls-right{margin-left:auto}
   .orbit-legend{display:none}
   .orbit-layer-pill{padding:6px}
-  .orbit-tour-caption{bottom:6px;padding:10px 12px}
+  .orbit-tour-caption{padding:10px 12px}
+  .orbit-tour-caption[class*=cap-]{left:6px;right:6px;bottom:6px;top:auto;width:auto;transform:none}
   .float-nav{gap:6px;padding:6px 8px 10px}
   .float-nav-btn{padding:8px 11px;font-size:12px}
   .float-nav-btn span{display:none}
   .orbit-tour-caption-row{align-items:flex-start;flex-direction:column;gap:6px}
   .orbit-tour-caption-controls{width:100%;justify-content:flex-end}
-  .tour-caption-left{left:6px;width:calc(100% - 12px)}
   .fix-columns{grid-template-columns:1fr;grid-template-rows:minmax(100px,.8fr) minmax(180px,1.4fr) minmax(100px,.8fr)}
   .fix-status{align-items:flex-start;flex-wrap:wrap}
 }
