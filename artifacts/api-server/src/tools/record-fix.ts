@@ -156,7 +156,9 @@ async function main() {
       session.emit({ type: "test", command: "npm test (after repair)", status: still.length ? "fail" : "pass", output: verdict(t, still) });
     }
   } else session.emit({ type: "test", command: "npm test", status: "skipped", output: "Tests not run in this recording" });
-  const changes = diffFiles().map(f => ({ file: f, before: original.get(f) || "", after: after.get(f) || "" }));
+  // Only files Claude wrote count as changes; anything else that differs (a cache a test run wrote, say) is noise.
+  const written = new Set(session.events.filter(e => e.type === "edit").map(e => (e as any).path as string));
+  const changes = diffFiles().filter(f => written.has(f)).map(f => ({ file: f, before: original.get(f) || "", after: after.get(f) || "" }));
   const afterRun = await assessFolder(root, project, standards);
   const readiness = (r: any) => Object.fromEntries(r.standards.map((s: any) => [s.short, s.readiness]));
   const b = readiness(before.result), a = readiness(afterRun.result);

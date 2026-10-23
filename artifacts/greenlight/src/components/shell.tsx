@@ -8,7 +8,7 @@ import { ReportsModal } from '@/components/reports';
 const base = import.meta.env.BASE_URL;
 
 /** The recorded fix session shown from the navigation (public/demo/<name>.json). */
-export const DEMO_RECORDING = 'gev-wave3-preview';
+export const DEMO_RECORDING = 'gev-wave3';
 
 export function Logo() {
   return (
