@@ -1,0 +1,47 @@
+name: Backup video of the pitch flow
+
+# Records the whole demo on the published site and pushes it to the
+# `backup-video` branch (one file, force-pushed), so a copy can be played
+# if the venue network fails.
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Site to record
+        default: https://ddg-greenlight.replit.app
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install --no-save --no-package-lock playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Record
+        run: node scripts/backup-video.mjs "${{ inputs.url }}"
+      - name: Convert to MP4
+        run: |
+          sudo apt-get -qq update && sudo apt-get -qq install -y ffmpeg >/dev/null
+          ffmpeg -y -loglevel error -i backup/greenlight-backup.webm -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -movflags +faststart backup/greenlight-backup.mp4
+          ls -la backup
+      - name: Push to the backup-video branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd backup && rm -f greenlight-backup.webm
+          git init -q -b backup-video
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A && git commit -q -m "Backup video of ${{ inputs.url }} at ${{ github.sha }}"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}" backup-video
