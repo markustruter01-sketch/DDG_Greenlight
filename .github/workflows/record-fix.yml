@@ -38,7 +38,7 @@ on:
         default: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   record:
@@ -107,3 +107,22 @@ jobs:
           name: fix-recording-wave-${{ inputs.wave }}
           path: out/
           retention-days: 30
+
+      # Artifact downloads are not reachable from the authoring session, so the
+      # recording is also pushed to the `recordings` branch (one folder per run).
+      - name: Push to the recordings branch
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          cd "$GITHUB_WORKSPACE"
+          git fetch origin recordings:recordings 2>/dev/null || git branch recordings $(git commit-tree -m "recordings" $(git hash-object -t tree /dev/null))
+          git worktree add -q rec-wt recordings
+          dest="rec-wt/wave-${{ inputs.wave }}-${{ github.run_id }}"
+          mkdir -p "$dest" && cp out/* "$dest"/
+          cd rec-wt
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A && git commit -q -m "Recording: wave ${{ inputs.wave }} of ${{ inputs.subject }} (run ${{ github.run_id }})"
+          git push -q "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}" recordings
