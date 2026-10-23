@@ -78,9 +78,19 @@ await shot('80-fix');
 await page.locator('[data-testid=link-recorded-fix]').click().catch(() => note('no recorded-fix link'));
 await page.waitForTimeout(12000);
 await shot('81-replay-12s');
+// Jump through the recording with the scrubber: a third, two thirds, then the end.
+const track = page.locator('[data-testid=progress-track]');
+const bb = await track.boundingBox().catch(() => null);
+if (bb) {
+  for (const [f, name] of [[0.33, '82-replay-third'], [0.66, '83-replay-two-thirds'], [0.9, '84-replay-late']]) {
+    await page.mouse.click(bb.x + bb.width * f, bb.y + bb.height / 2);
+    await page.waitForTimeout(1200);
+    await shot(name);
+  }
+}
 await page.keyboard.press('End');
 await page.waitForTimeout(1500);
-await shot('82-replay-end');
+await shot('85-replay-end');
 
 await fs.writeFile(`${out}/log.txt`, log.join('\n'));
 await browser.close();
