@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 /**
  * A DDG-styled arrow from the tour caption to whatever the caption is about:
@@ -96,6 +96,9 @@ export function TourPointer({ target, targetKey }: { target: PointerTarget | nul
   const [g, setG] = useState<Geometry | null>(null);
   const targetRef = useRef(target);
   targetRef.current = target;
+  // Measure the new target before paint, so the label and the line never disagree
+  // on a slow frame (the per-frame loop below then keeps it following the camera).
+  useLayoutEffect(() => { setG(target ? measure(target) : null); }, [target]);
   useEffect(() => {
     let raf = 0;
     let last: Geometry | null = null;
