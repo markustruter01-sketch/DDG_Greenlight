@@ -25,6 +25,7 @@ const COLOR = {
   ai: 0xf7fbff,
   link: 0x9fb6d4,
   linkHot: 0xffd0c8,
+  linkShow: 0x00e5ff,
   FIXED: 0x4fd99a,
 };
 
@@ -403,22 +404,29 @@ export function createOrbitScene({ nodes, groups, themes }) {
     return ease(phase(t, 0.7, 1));
   }
 
-  function rebuildLink(l) {
+  function linkCurve(l) {
     const pa = byId.get(l.a).mesh.position;
     const pb = byId.get(l.b).mesh.position;
-    const key = `${pa.y.toFixed(3)},${pb.y.toFixed(3)}`;
-    if (l.built === key) return;
     const mid = pa.clone().add(pb).multiplyScalar(0.5);
     mid.y += 0.7 + pa.distanceTo(pb) * 0.1;
+    return new THREE.QuadraticBezierCurve3(pa.clone(), mid, pb.clone());
+  }
+
+  function rebuildLink(l, radius = 0.0045) {
+    const pa = byId.get(l.a).mesh.position;
+    const pb = byId.get(l.b).mesh.position;
+    const key = `${pa.y.toFixed(3)},${pb.y.toFixed(3)},${radius}`;
+    if (l.built === key) return;
     l.mesh.geometry.dispose();
-    l.mesh.geometry = new THREE.TubeGeometry(
-      new THREE.QuadraticBezierCurve3(pa.clone(), mid, pb.clone()),
-      48,
-      0.0045,
-      5,
-      false,
-    );
+    l.mesh.geometry = new THREE.TubeGeometry(linkCurve(l), 48, radius, 5, false);
     l.built = key;
+  }
+
+  /** Links of one shared-evidence theme, drawn bold for the tour. */
+  const showcase = { theme: null, nodes: new Set(), marks: [] };
+  const SHOW_RADIUS = 0.012;
+  function isShown(l) {
+    return showcase.theme !== null && l.theme === showcase.theme;
   }
 
   /** Re-apply every opacity, position and scale from the current state. */
@@ -440,7 +448,7 @@ export function createOrbitScene({ nodes, groups, themes }) {
       const n = e.node;
       let o = nodeOpacity(n, state.layers, {
         selected: state.selected,
-        linked: state.linked,
+        linked: showcase.nodes.size ? new Set([...state.linked, ...showcase.nodes]) : state.linked,
       });
       if (
         pulseOn &&
@@ -471,13 +479,18 @@ export function createOrbitScene({ nodes, groups, themes }) {
     const linksOn = !!state.layers.links;
     focusedLinks.clear();
     for (const l of links) {
+      if (isShown(l)) {
+        rebuildLink(l, SHOW_RADIUS);
+        l.material.color.setHex(COLOR.linkShow);
+        continue; // opacity animated in frame()
+      }
       const hot =
         linksOn &&
         ((state.selected && (l.a === state.selected || l.b === state.selected)) ||
           (state.hovered && (l.a === state.hovered || l.b === state.hovered)));
       if (linksOn) rebuildLink(l);
       l.material.color.setHex(hot ? COLOR.linkHot : COLOR.link);
-      l.material.opacity = hot ? 0.95 : linksOn ? 0.03 : 0;
+      l.material.opacity = hot ? 0.95 : linksOn ? (showcase.theme !== null ? 0.015 : 0.03) : 0;
       if (hot) focusedLinks.add(l);
     }
     if (pulseOn && state.pulse.key === 'core')
@@ -641,10 +654,95 @@ export function createOrbitScene({ nodes, groups, themes }) {
       m.position.copy(m.userData.follow.position);
       m.lookAt(camera.position);
     }
+    if (showcase.theme !== null) {
+      let i = 0;
+      for (const l of links) {
+        if (!isShown(l)) continue;
+        // A slow shimmer that travels along the set, so the eye reads them as connections.
+        l.material.opacity = 0.62 + 0.38 * Math.sin(now / 260 - i * 0.55);
+        i++;
+      }
+      const s = 1 + 0.18 * Math.sin(now / 300);
+      for (const m of showcase.marks) {
+        m.position.copy(m.userData.follow.position);
+        m.lookAt(camera.position);
+        m.scale.setScalar(s);
+      }
+    }
     if (state.pulse) {
       apply(now);
       if (now > state.pulse.until) state.pulse = null;
     }
+  }
+
+  /** Highlight every link of one theme (index into `themes`), or clear with null. */
+  function showcaseLinks(theme) {
+    for (const m of showcase.marks) {
+      rings.remove(m);
+      m.geometry.dispose();
+      m.material.dispose();
+    }
+    showcase.marks = [];
+    showcase.nodes = new Set();
+    showcase.theme = theme ?? null;
+    if (showcase.theme !== null) {
+      for (const l of links) {
+        if (!isShown(l)) continue;
+        showcase.nodes.add(l.a);
+        showcase.nodes.add(l.b);
+      }
+      for (const id of showcase.nodes) {
+        const o = byId.get(id);
+        if (!o) continue;
+        const r = new THREE.Mesh(
+          new THREE.RingGeometry(0.085, 0.1, 40),
+          new THREE.MeshBasicMaterial({ color: COLOR.linkShow, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false }),
+        );
+        r.position.copy(o.mesh.position);
+        r.userData.follow = o.mesh;
+        rings.add(r);
+        showcase.marks.push(r);
+      }
+    }
+    apply();
+  }
+
+  /** Themes that have links, most links first: [{ theme, count }]. */
+  function linkThemes() {
+    const counts = new Map();
+    for (const l of links) counts.set(l.theme, (counts.get(l.theme) || 0) + 1);
+    return [...counts.entries()].map(([theme, count]) => ({ theme, count })).sort((a, b) => b.count - a.count);
+  }
+
+  /** The two requirement ids at the ends of a theme's longest arc. */
+  function linkEnds(theme) {
+    let best = null;
+    let bestLen = -1;
+    for (const l of links) {
+      if (l.theme !== theme) continue;
+      const len = byId.get(l.a).mesh.position.distanceTo(byId.get(l.b).mesh.position);
+      if (len > bestLen) {
+        bestLen = len;
+        best = l;
+      }
+    }
+    return best ? { a: best.a, b: best.b } : null;
+  }
+
+  /** World position of the top of the longest arc of a theme: where the eye goes. */
+  function linkApex(theme) {
+    let best = null;
+    let bestLen = -1;
+    for (const l of links) {
+      if (l.theme !== theme) continue;
+      const len = byId.get(l.a).mesh.position.distanceTo(byId.get(l.b).mesh.position);
+      if (len > bestLen) {
+        bestLen = len;
+        best = l;
+      }
+    }
+    if (!best) return null;
+    return rings.localToWorld(linkCurve(best).getPoint(0.5)).clone();
   }
 
   /** World position (Earth radii, ECEF) of a node or a local point. */
@@ -698,6 +796,10 @@ export function createOrbitScene({ nodes, groups, themes }) {
     pulse,
     setEmphasis,
     setItems,
+    showcaseLinks,
+    linkThemes,
+    linkApex,
+    linkEnds,
     frame,
     worldOf,
     pick,

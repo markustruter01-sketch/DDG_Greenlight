@@ -292,6 +292,7 @@ export function DetailPanel({ run, config, target, st, projected, onClose, onRun
           <motion.aside
             className="glass absolute bottom-0 right-0 top-0 z-50 flex w-full flex-col sm:w-[460px] sm:max-w-[92vw]"
             style={{ borderRadius: '20px 0 0 20px', background: 'rgba(8,24,33,.82)' }}
+            data-tour-target="detail-panel"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}

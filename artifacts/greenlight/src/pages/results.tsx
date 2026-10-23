@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'wouter';
-import { ArrowRight, GitCompare, SlidersHorizontal } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, GitCompare, Pause, Play, SlidersHorizontal, Volume2, VolumeX } from 'lucide-react';
 import {
   getGetAssessmentQueryKey,
   useGetAssessment,
@@ -13,22 +13,29 @@ import { Dot, ErrorBlock, Gauge, Modal, Skeleton } from '@/components/gl';
 import { OrbitView, type OrbitControlApi, type OrbitSnapshot } from '@/components/orbit-view';
 import { DetailPanel, type Target } from '@/components/detail-panel';
 import { CompareModal } from '@/components/compare';
+import { TourPointer, type PointerTarget } from '@/components/tour-pointer';
+import { TourProgress } from '@/components/tour-progress';
+import { createNarrator } from '@/lib/narrator';
 import { ANNUNCIATORS, findingsFor, pc, statusMap, tally, tone, waveOf } from '@/lib/greenlight';
 
 const RING_COLORS = ['#7CC9E8', '#00E5FF', '#CFE3EE'];
 const CLASSES = ['Non-classified', 'OFFICIAL: Sensitive', 'PROTECTED', 'SECRET', 'TOP SECRET'];
 const TOUR_SEEN_KEY = 'ddg-greenlight-results-tour-seen';
 const TOUR_STEPS = [
-  { title: 'This is your software', body: 'The glass planet represents the software being assessed.', seconds: 7 },
-  { title: 'Three rings, three kinds of requirement', body: 'Safety is the inner ring, security is the middle ring, and AI requirements are the outer ring.', seconds: 9 },
-  { title: 'Every dot is one requirement', body: 'Green means met, amber means partial, red means failed, and dim dots are not applicable.', seconds: 9 },
-  { title: 'Raised pins are must-fix', body: 'Raised red pins mark blocking items that must be addressed before release.', seconds: 9 },
-  { title: 'Links show shared evidence', body: 'One fix can close related requirements across more than one standard.', seconds: 9 },
-  { title: 'Readiness per standard', body: 'Each ring shows readiness against a standard. Select one to see its controls and further testing.', seconds: 9 },
-  { title: 'The plan, wave by wave', body: 'Waves show projected progress. The same rules check the code again after fixes.', seconds: 15 },
-  { title: 'Click anything for its evidence', body: 'A finding shows its rating, evidence files and rule, and proof of fix.', seconds: 10 },
-  { title: 'Fix it with Claude', body: 'Checking is rules, never AI. Only fixing uses Claude, and you approve every change.', seconds: 13 },
+  { title: 'This is your software', body: 'The glass planet represents the software being assessed.', seconds: 12 },
+  { title: 'Three rings, three kinds of requirement', body: 'Safety is the inner ring, security is the middle ring, and AI requirements are the outer ring.', seconds: 14 },
+  { title: 'Every dot is one requirement', body: 'Green means met, amber means partial, red means failed, and dim dots are not applicable.', seconds: 14 },
+  { title: 'Raised pins are must-fix', body: 'Raised red pins mark blocking items that must be addressed before release.', seconds: 14 },
+  { title: 'Links show shared evidence', body: 'A link joins requirements in different standards that rest on the same evidence. One fix can close all of them.', seconds: 15 },
+  { title: 'Readiness per standard', body: 'Each ring shows readiness against a standard. Select one to see its controls and further testing.', seconds: 14 },
+  { title: 'The plan, wave by wave', body: 'Waves show projected progress. The same rules check the code again after fixes.', seconds: 20 },
+  { title: 'Click anything for its evidence', body: 'A finding shows its rating, evidence files and rule, and proof of fix.', seconds: 15 },
+  { title: 'Fix it with Claude', body: 'Checking is rules, never AI. Only fixing uses Claude, and you approve every change.', seconds: 18 },
 ];
+const TOUR_TOTAL_SECONDS = TOUR_STEPS.reduce((n, s) => n + s.seconds, 0);
+const VOICE_KEY = 'ddg-greenlight-tour-voice';
+/** One timed moment in a tour step: camera, layers or the arrow. */
+type Cue = { at: number; run: () => void };
 type TourStatus = 'closed' | 'prompt' | 'playing' | 'paused' | 'complete';
 type SavedTourState = {
   camera: OrbitSnapshot;
@@ -68,6 +75,11 @@ export default function Results() {
   const [tourRunId, setTourRunId] = useState(0);
   const [tourRemaining, setTourRemaining] = useState(0);
   const [readinessHighlight, setReadinessHighlight] = useState(false);
+  const [pointer, setPointer] = useState<{ key: string; target: PointerTarget } | null>(null);
+  const [voiceOn, setVoiceOn] = useState(() => {
+    try { return window.localStorage.getItem(VOICE_KEY) !== 'off'; } catch { return true; }
+  });
+  const narrator = useMemo(() => createNarrator(), []);
   const orbitControls = useRef<OrbitControlApi | null>(null);
   const savedTour = useRef<SavedTourState | null>(null);
   const tourDeadline = useRef(0);
@@ -136,15 +148,27 @@ export default function Results() {
   };
   const finishTour = () => {
     rememberTour();
+    narrator.stop();
+    orbitControls.current?.showcaseLinks(null);
+    setPointer(null);
     setTourStatus('closed');
     setTourIndex(-1);
     setReadinessHighlight(false);
     void restoreTourState(false);
   };
+  const toggleVoice = () => {
+    setVoiceOn((on) => {
+      const next = !on;
+      try { window.localStorage.setItem(VOICE_KEY, next ? 'on' : 'off'); } catch { /* per-viewer convenience only */ }
+      if (!next) { narrator.stop(); spokenStep.current = ''; }
+      return next;
+    });
+  };
   const advanceTour = (next: number) => {
     if (next < 0) return;
     if (next >= TOUR_STEPS.length) {
       setTourStatus('complete');
+      setPointer(null);
       setTourRemaining(0);
       orbitControls.current?.pausePlayback(false);
       return;
@@ -184,7 +208,7 @@ export default function Results() {
   };
   const fileCount = run ? countFiles(run.inventory) : null;
   const tourActive = ['playing', 'paused'].includes(tourStatus) && tourIndex >= 0;
-  const tourFocusing = tourActive && [0, 1, 2, 3, 4, 6, 7].includes(tourIndex);
+  const tourFocusing = tourActive && [0, 1, 2, 3, 4, 7].includes(tourIndex);
 
   useEffect(() => {
     if (tourStatus !== 'playing' || tourIndex < 0) return;
@@ -192,6 +216,7 @@ export default function Results() {
     const timer = window.setTimeout(() => {
       if (tourIndex >= TOUR_STEPS.length - 1) {
         setTourStatus('complete');
+        setPointer(null);
         orbitControls.current?.pausePlayback(false);
       } else {
         const next = tourIndex + 1;
@@ -202,103 +227,162 @@ export default function Results() {
     return () => window.clearTimeout(timer);
   }, [tourStatus, tourIndex, tourRunId, tourRemaining]);
 
-  useEffect(() => {
-    if (!run || tourIndex < 0 || !['playing', 'paused'].includes(tourStatus)) return;
+  /**
+   * The tour as a timeline. Each slide is a list of cues (seconds from the
+   * start of the slide): camera moves, layers, link highlights and the arrow.
+   * Cues at 0 set the slide up; later ones play while the slide runs, pause
+   * with it, and are not repeated on resume.
+   */
+  const cuesFor = (index: number): Cue[] => {
     const controls = orbitControls.current;
-    if (!controls) return;
-    controls.pauseAuto(true);
-    const previous = lastTourStep.current;
-    if (previous === 7 && tourIndex !== 7) {
-      setTarget(null);
-      setPicked(null);
-    }
-    lastTourStep.current = tourIndex;
+    if (!run || !controls) return [];
     const baselineStatuses = statusMap(run, 0);
     const pin = run.findings.find((finding) => finding.blocking && ['N', 'P'].includes(baselineStatuses[finding.key]))
       ?? run.findings.find((finding) => finding.blocking)
       ?? run.findings[0];
     const pinKey = pin?.key;
+    const nameOf = (key: string) => {
+      const f = run.findings.find((x) => x.key === key);
+      return f ? `${f.standardShort} ${f.id}` : '';
+    };
+    const dom = (target: string, label?: string, key = target) =>
+      setPointer({ key, target: { kind: 'dom', selector: target.startsWith('[') ? target : `[data-tour-target="${target}"]`, label } });
+    const at = (target: string | { linkTheme: number } | { world: [number, number, number] }, label?: string, key = JSON.stringify(target)) =>
+      setPointer({ key, target: { kind: 'point', resolve: () => orbitControls.current?.screenOf(target) ?? null, label } });
+    const clear = () => setPointer(null);
+    // Every slide starts from a clean scene, then sets up its own.
+    const reset: Cue = {
+      at: 0,
+      run: () => {
+        controls.pauseAuto(true);
+        controls.select(null);
+        controls.showcaseLinks(null);
+        setTarget(null);
+        setPicked(null);
+        setReadinessHighlight(false);
+        setWave(0);
+        clear();
+      },
+    };
+    const steps: Cue[][] = [
+      // 0 · This is your software
+      [
+        { at: 0, run: () => { controls.emphasis('core'); controls.pulse('core', 6200); void controls.shot({ target: [0, 0, 0], az: 0, el: 10, dist: 8, seconds: 2.1, lift: 0.08 }); } },
+        { at: 1.2, run: () => at({ world: [0, 0, 0] }, 'Your software') },
+        { at: 5, run: () => { void controls.shot({ target: [0, 0, 0], az: 55, el: 22, dist: 12, seconds: 6, drift: 3 }); } },
+      ],
+      // 1 · Three rings
+      [
+        { at: 0, run: () => { void controls.home(); controls.emphasis('saf'); controls.pulse('saf', 3000); dom('ring-saf', 'Safety · inner ring'); } },
+        { at: 4.5, run: () => { controls.emphasis('sec'); controls.pulse('sec', 3000); dom('ring-sec', 'Security · middle ring'); void controls.shot({ target: [0, 0, 0], az: 30, el: 26, dist: 26, seconds: 3, drift: 1 }); } },
+        { at: 9, run: () => { controls.emphasis('ai'); controls.pulse('ai', 3000); dom('ring-ai', 'AI · outer ring'); void controls.shot({ target: [0, 0, 0], az: 70, el: 32, dist: 30, seconds: 3, drift: 1.5 }); } },
+      ],
+      // 2 · Every dot is one requirement
+      [
+        { at: 0, run: () => { controls.emphasis('sec'); void controls.shot({ target: [0, -0.4, 0], az: 34, el: 20, dist: 23, seconds: 2.5, drift: 1.2 }); dom('status-legend', 'Colour = status'); } },
+        { at: 7, run: () => { controls.setLayer('passing', true); dom('layer-passing', 'Show passing items'); void controls.shot({ target: [0, -0.4, 0], az: 80, el: 34, dist: 20, seconds: 4, drift: 2 }); } },
+      ],
+      // 3 · Raised pins are must-fix
+      [
+        { at: 0, run: () => { controls.emphasis('mustfix'); if (pinKey) { setPicked(pinKey); controls.select(pinKey); void controls.focus(pinKey); } } },
+        { at: 1.6, run: () => { if (pinKey) at(pinKey, `Must fix · ${nameOf(pinKey)}`); } },
+        { at: 8, run: () => dom('layer-mustfix', 'Must-fix layer') },
+      ],
+      // 4 · Links show shared evidence
+      (() => {
+        const themes = controls.linkThemes();
+        const first = themes[0]?.theme;
+        const second = themes[1]?.theme;
+        const ends = first == null ? null : controls.linkEnds(first);
+        if (first == null) return [{ at: 0, run: () => { controls.setLayer('links', true); controls.emphasis('links'); dom('layer-links', 'Links layer'); } }];
+        return [
+          { at: 0, run: () => { controls.setLayer('links', true); controls.emphasis('links'); void controls.showcaseLinks(first, { az: 24, el: 34, dist: 12, seconds: 2.4 }); } },
+          { at: 1.8, run: () => at({ linkTheme: first }, `Shared evidence · ${themes[0].count} link${themes[0].count === 1 ? '' : 's'}`) },
+          ...(ends ? [
+            { at: 5, run: () => { void controls.focus(ends.a); at(ends.a, nameOf(ends.a)); } },
+            { at: 8.5, run: () => { void controls.focus(ends.b); at(ends.b, nameOf(ends.b)); } },
+          ] : []),
+          ...(second != null ? [
+            { at: 12, run: () => { controls.select(null); void controls.showcaseLinks(second, { az: -40, el: 30, dist: 13, seconds: 2.2 }); at({ linkTheme: second }, 'Another shared fix'); } },
+          ] : [{ at: 12, run: () => dom('layer-links', 'Links layer') }]),
+        ];
+      })(),
+      // 5 · Readiness per standard
+      [
+        { at: 0, run: () => { controls.emphasis(null); void controls.home(); setReadinessHighlight(true); dom('[data-testid="readiness-rings"]', 'Readiness per standard'); } },
+        { at: 3, run: () => setReadinessHighlight(false) },
+        ...(run.standards[0] ? [{ at: 7, run: () => dom(`[data-testid="button-standard-${run.standards[0].id}"]`, `${run.standards[0].short} · select for detail`) }] : []),
+      ],
+      // 6 · The plan, wave by wave
+      [
+        { at: 0, run: () => { controls.emphasis(null); void controls.home(); dom('[data-testid="wave-switch"]', 'Fix plan, wave by wave'); } },
+        ...[1, 2, 3, 4].map((n, i) => ({
+          at: 3 + i * 3,
+          run: () => {
+            setWave(n);
+            dom(`[data-testid="button-wave-${n}"]`, `Wave ${n}`);
+            if (i === 0) void controls.shot({ target: [0, 0, 0], az: 40, el: 30, dist: 28, seconds: 11, drift: 3 });
+          },
+        })),
+        { at: 15.5, run: () => dom('[data-testid="text-verdict"]', 'Projected verdict') },
+      ],
+      // 7 · Click anything for its evidence
+      [
+        { at: 0, run: () => { controls.emphasis('mustfix'); if (pinKey) { setPicked(pinKey); setTarget({ kind: 'finding', key: pinKey }); controls.select(pinKey); void controls.focus(pinKey); } } },
+        { at: 1.5, run: () => dom('detail-panel', 'Rating, evidence, rule, proof of fix') },
+        { at: 8, run: () => { if (pinKey) at(pinKey, 'Click any dot'); } },
+      ],
+      // 8 · Fix it with Claude
+      [
+        { at: 0, run: () => { controls.emphasis('core'); void controls.home(); dom('rules-badge', 'Checked by rules · no AI'); } },
+        { at: 7, run: () => dom('fix-button', 'Fix it with Claude') },
+        { at: 13, run: () => dom('nav-replay', 'Watch a recorded fix') },
+      ],
+    ];
+    return [reset, ...(steps[index] ?? [])];
+  };
 
-    if (tourIndex === 0) {
-      controls.emphasis('core');
-      controls.pulse('core', 6200);
-      void controls.shot({ target: [0, 0, 0], az: 0, el: 10, dist: 8, seconds: 2.1, lift: 0.08 });
-    } else if (tourIndex === 1) {
-      void controls.home();
-      controls.emphasis('saf');
-      controls.pulse('saf', 2700);
-    } else if (tourIndex === 2) {
-      controls.emphasis('sec');
-      void controls.shot({ target: [0, -0.4, 0], az: 34, el: 20, dist: 23, seconds: 2.5, drift: 1.2 });
-    } else if (tourIndex === 3) {
-      controls.emphasis('mustfix');
-      if (pinKey) {
-        setPicked(pinKey);
-        controls.select(pinKey);
-        void controls.focus(pinKey);
-      }
-    } else if (tourIndex === 4) {
-      controls.setLayer('links', true);
-      controls.emphasis('links');
-      if (pinKey) {
-        setPicked(pinKey);
-        controls.select(pinKey);
-        void controls.focus(pinKey);
-      }
-    } else if (tourIndex === 5) {
-      controls.emphasis(null);
-      controls.select(null);
-      setWave(0);
-      void controls.home();
-      setReadinessHighlight(true);
-    } else if (tourIndex === 6) {
-      controls.emphasis(null);
-      controls.select(null);
-      setTarget(null);
-      setPicked(null);
-      setWave(0);
-      void controls.home();
-    } else if (tourIndex === 7) {
-      controls.emphasis('mustfix');
-      if (pinKey) {
-        setPicked(pinKey);
-        setTarget({ kind: 'finding', key: pinKey });
-        controls.select(pinKey);
-        void controls.focus(pinKey);
-      }
-    } else if (tourIndex === 8) {
-      controls.emphasis('core');
-      setTarget(null);
-      setPicked(null);
-      void controls.home();
-    }
-  }, [run, tourIndex, tourRunId]);
+  // Which cues of the current slide have run (reset when the slide or the run changes).
+  const firedCues = useRef<{ key: string; done: Set<number> }>({ key: '', done: new Set() });
+  const cueList = useRef<Cue[]>([]);
+  useEffect(() => {
+    if (!run || tourIndex < 0 || !['playing', 'paused'].includes(tourStatus)) return;
+    const key = `${tourRunId}:${tourIndex}`;
+    if (firedCues.current.key === key) return;
+    cueList.current = cuesFor(tourIndex);
+    firedCues.current = { key, done: new Set() };
+    cueList.current.forEach((cue, i) => {
+      if (cue.at <= 0) { firedCues.current.done.add(i); cue.run(); }
+    });
+    lastTourStep.current = tourIndex;
+  }, [run, tourIndex, tourRunId, tourStatus]);
 
   useEffect(() => {
     if (tourStatus !== 'playing' || tourIndex < 0) return;
-    const timers: number[] = [];
-    let interval = 0;
-    if (tourIndex === 1) {
-      const controls = orbitControls.current;
-      timers.push(window.setTimeout(() => { controls?.emphasis('sec'); controls?.pulse('sec', 2700); }, 3000));
-      timers.push(window.setTimeout(() => { controls?.emphasis('ai'); controls?.pulse('ai', 2700); }, 6000));
-    }
-    if (tourIndex === 5) {
-      setReadinessHighlight(true);
-      timers.push(window.setTimeout(() => setReadinessHighlight(false), 2000));
-    }
-    if (tourIndex === 6) {
-      const sequence = [1, 2, 3, 4];
-      let step = 0;
-      interval = window.setInterval(() => {
-        if (step < sequence.length) setWave(sequence[step++]);
-      }, 3000);
-    }
-    return () => {
-      timers.forEach(window.clearTimeout);
-      if (interval) window.clearInterval(interval);
-    };
-  }, [tourStatus, tourIndex, tourRunId]);
+    const elapsed = TOUR_STEPS[tourIndex].seconds * 1000 - tourRemaining;
+    const timers = cueList.current.map((cue, i) => {
+      if (firedCues.current.done.has(i)) return 0;
+      return window.setTimeout(() => {
+        if (firedCues.current.done.has(i)) return;
+        firedCues.current.done.add(i);
+        cue.run();
+      }, Math.max(0, cue.at * 1000 - elapsed));
+    });
+    return () => timers.forEach((t) => t && window.clearTimeout(t));
+  }, [tourStatus, tourIndex, tourRunId, tourRemaining]);
+
+  // The voice reads each slide once; pause and resume follow the tour.
+  const spokenStep = useRef('');
+  useEffect(() => {
+    if (tourIndex < 0) return;
+    if (tourStatus === 'paused') { narrator.pause(); return; }
+    if (tourStatus !== 'playing' || !voiceOn) return;
+    const key = `${tourRunId}:${tourIndex}`;
+    if (spokenStep.current === key) { narrator.resume(); return; }
+    spokenStep.current = key;
+    void narrator.speak(`${TOUR_STEPS[tourIndex].title}. ${TOUR_STEPS[tourIndex].body}`);
+  }, [tourStatus, tourIndex, tourRunId, voiceOn]);
+  useEffect(() => () => narrator.stop(), [narrator]);
 
   useEffect(() => {
     if (tourStatus === 'closed') return;
@@ -403,26 +487,29 @@ export default function Results() {
                 }
                 tourCaption={tourIndex >= 0 && ['playing', 'paused', 'complete'].includes(tourStatus) ? (
                   <div className={`glass orbit-tour-caption ${tourIndex === 7 ? 'tour-caption-left' : ''}`} data-testid="tour-caption">
-                    <div className="orbit-tour-caption-row">
-                      <div className="min-w-0">
-                        <div className="lbl !text-[#00E5FF]">{tourIndex + 1} / {TOUR_STEPS.length} · GUIDED TOUR</div>
-                        <div className="font-head text-sm font-semibold">{TOUR_STEPS[tourIndex].title}</div>
-                        <p className="text-xs text-[#CFE3EE]">{TOUR_STEPS[tourIndex].body}</p>
-                      </div>
-                      <div className="orbit-tour-caption-controls">
-                        {tourStatus === 'complete' ? (
-                          <>
-                            <button className="btn !px-3 !py-1.5 text-xs" onClick={startTour} data-testid="button-tour-replay">Replay</button>
-                            <button className="btn btn-primary !px-3 !py-1.5 text-xs" onClick={finishTour} data-testid="button-tour-done">Done</button>
-                          </>
-                        ) : (
-                          <>
-                            <button className="btn !px-2 !py-1.5 text-xs" onClick={() => advanceTour(tourIndex - 1)} disabled={tourIndex === 0} data-testid="button-tour-previous">Previous</button>
-                            <button className="btn !px-2 !py-1.5 text-xs" onClick={toggleTourPlayback} data-testid="button-tour-pause">{tourStatus === 'paused' ? 'Resume' : 'Pause'}</button>
-                            <button className="btn !px-2 !py-1.5 text-xs" onClick={() => advanceTour(tourIndex + 1)} data-testid="button-tour-next">Next</button>
-                          </>
-                        )}
-                      </div>
+                    <div className="tour-cap-kicker lbl">{tourIndex + 1} / {TOUR_STEPS.length} · Guided tour</div>
+                    <div className="tour-cap-title font-head">{TOUR_STEPS[tourIndex].title}</div>
+                    <p className="tour-cap-body">{TOUR_STEPS[tourIndex].body}</p>
+                    <div className="orbit-tour-caption-controls">
+                      {narrator.supported && (
+                        <button className={`btn tour-cap-btn ${voiceOn ? 'is-on' : ''}`} onClick={toggleVoice} aria-pressed={voiceOn} aria-label={voiceOn ? 'Mute the voice' : 'Turn the voice on'} data-testid="button-tour-voice">
+                          {voiceOn ? <Volume2 size={16} /> : <VolumeX size={16} />} Voice
+                        </button>
+                      )}
+                      <span className="flex-1" />
+                      {tourStatus === 'complete' ? (
+                        <>
+                          <button className="btn tour-cap-btn" onClick={startTour} data-testid="button-tour-replay">Replay</button>
+                          <button className="btn btn-primary tour-cap-btn" onClick={finishTour} data-testid="button-tour-done">Done</button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="btn tour-cap-btn" onClick={() => advanceTour(tourIndex - 1)} disabled={tourIndex === 0} aria-label="Previous slide" data-testid="button-tour-previous"><ChevronLeft size={16} /> Previous</button>
+                          <button className="btn tour-cap-btn" onClick={toggleTourPlayback} data-testid="button-tour-pause">{tourStatus === 'paused' ? <><Play size={16} /> Resume</> : <><Pause size={16} /> Pause</>}</button>
+                          <button className="btn tour-cap-btn" onClick={() => advanceTour(tourIndex + 1)} aria-label="Next slide" data-testid="button-tour-next">Next <ChevronRight size={16} /></button>
+                          <button className="btn tour-cap-btn" onClick={finishTour} data-testid="button-tour-exit">Exit</button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ) : null}
@@ -433,7 +520,7 @@ export default function Results() {
                       <h2 className="font-head mt-2 text-xl font-semibold">How to read this</h2>
                       <p className="mt-2 text-sm text-[#CFE3EE]">Take a guided tour of the live orbit, the standards, and the fix plan.</p>
                       <div className="mt-5 flex items-center gap-3">
-                        <button className="btn btn-primary" onClick={startTour} data-testid="button-tour-play">Play the tour (90 s)</button>
+                        <button className="btn btn-primary" onClick={startTour} data-testid="button-tour-play">Play the tour ({Math.round(TOUR_TOTAL_SECONDS / 60)} min, with voice)</button>
                         <button className="lbl rounded-lg px-3 py-2 hover:text-[#00E5FF]" onClick={finishTour} data-testid="button-tour-skip">Skip</button>
                       </div>
                     </div>
@@ -446,6 +533,8 @@ export default function Results() {
           </div>
         </div>
       )}
+      {tourActive && pointer && <TourPointer target={pointer.target} targetKey={pointer.key} />}
+      {tourActive && <TourProgress steps={TOUR_STEPS.map((step) => step.seconds)} index={tourIndex} playing={tourStatus === 'playing'} remainingMs={tourRemaining} deadline={tourDeadline} />}
       {run && <>
         <Modal open={classifyOpen} onClose={() => setClassifyOpen(false)} title="Suggested ISM classification">
           <div className="space-y-4">

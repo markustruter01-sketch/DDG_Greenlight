@@ -1,11 +1,14 @@
 import { type ReactNode, useState } from 'react';
-import { Link } from 'wouter';
-import { FileText } from 'lucide-react';
+import { Link, useLocation } from 'wouter';
+import { FileText, Rocket, Orbit, Wrench, MonitorPlay } from 'lucide-react';
 import { Show, UserButton } from '@clerk/react';
 import { useListProjects } from '@workspace/api-client-react';
 import { ReportsModal } from '@/components/reports';
 
 const base = import.meta.env.BASE_URL;
+
+/** The recorded fix session shown from the navigation (public/demo/<name>.json). */
+export const DEMO_RECORDING = 'gev-wave3-preview';
 
 export function Logo() {
   return (
@@ -37,6 +40,13 @@ export function Shell({
   const projects = useListProjects();
   const latest = projects.data?.[0]?.latestRunId;
   const rid = runId ?? latest;
+  const [path] = useLocation();
+  const nav = [
+    { href: '/start', label: 'Start', icon: Rocket, on: path === '/start' || path === '/', test: 'start', tour: 'nav-start' },
+    { href: rid ? `/results/${rid}` : '/start', label: 'Results', icon: Orbit, on: path.startsWith('/results'), test: 'results', tour: 'nav-results' },
+    { href: rid ? `/fix/${rid}` : '/start', label: 'Fix and verify', icon: Wrench, on: path.startsWith('/fix'), test: 'fix', tour: 'nav-fix' },
+    { href: `/replay/${DEMO_RECORDING}`, label: 'Recorded fix', icon: MonitorPlay, on: path.startsWith('/replay'), test: 'replay', tour: 'nav-replay' },
+  ];
   return (
     <div className="app-shell relative flex flex-col">
       <div
@@ -66,16 +76,14 @@ export function Shell({
         </div>
       </header>}
       <main className="app-main relative z-10 flex flex-1 flex-col">{children}</main>
-      {chrome && <footer className="screen-footer relative z-10 flex items-center justify-between gap-2">
-        <nav className="lbl flex items-center gap-3" aria-label="Footer">
-          <Link href="/start" className="hover:text-[#00E5FF]" data-testid="link-footer-start">Start</Link>
-          <span>·</span>
-          <Link href={rid ? `/results/${rid}` : '/start'} className="hover:text-[#00E5FF]" data-testid="link-footer-results">Results</Link>
-          <span>·</span>
-          <Link href={rid ? `/fix/${rid}` : '/start'} className="hover:text-[#00E5FF]" data-testid="link-footer-fix">Fix and verify</Link>
-        </nav>
-        <span className="lbl opacity-70">DDG Greenlight</span>
-      </footer>}
+      {chrome && <nav className="float-nav" aria-label="Main">
+        {nav.map(({ href, label, icon: Icon, on, test, tour }) => (
+          <Link key={test} href={href} className={`float-nav-btn ${on ? 'is-on' : ''}`} aria-label={label} aria-current={on ? 'page' : undefined} data-testid={`link-footer-${test}`} data-tour-target={tour}>
+            <Icon size={17} strokeWidth={1.8} />
+            <span>{label}</span>
+          </Link>
+        ))}
+      </nav>}
       {runId && <ReportsModal runId={runId} open={reports} onClose={() => setReports(false)} />}
     </div>
   );

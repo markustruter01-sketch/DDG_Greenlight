@@ -15,7 +15,7 @@ import {
   type FixRun,
   type AssessmentRun,
 } from '@workspace/api-client-react';
-import { Shell } from '@/components/shell';
+import { Shell, DEMO_RECORDING } from '@/components/shell';
 import { Dot, ErrorBlock, Skeleton } from '@/components/gl';
 import { useGate } from '@/hooks/use-gate';
 import { download, lineDiff, pc, reportUrl, tally } from '@/lib/greenlight';
@@ -190,7 +190,8 @@ export default function Fix() {
           <div className="fix-controls">
             {run.waves.map((item) => <button key={item.number} onClick={() => { setWave(item.number); setPicked(null); }} className="lbl rounded-full border px-3 py-1.5 !text-[10px]" style={{ borderColor: wave === item.number ? '#00E5FF' : 'rgba(124,201,232,.3)', background: wave === item.number ? 'rgba(0,229,255,.13)' : 'rgba(11,31,42,.46)' }} data-testid={`button-wave-${item.number}`}>Wave {item.number} · {item.fixCount}</button>)}
             {inFlight && <button className="btn !px-3 !py-1.5 text-xs" onClick={() => { setDismissed(null); setScreen({ kind: 'live', fixId: inFlight.id }); }} data-testid="button-open-console"><MonitorPlay size={14} /> Watch the fix</button>}
-            <Link href={`/results/${id}`} className="btn ml-auto !px-3 !py-1.5 text-xs" data-testid="link-back-results">Back to results</Link>
+            <Link href={`/replay/${DEMO_RECORDING}`} className="btn ml-auto !px-3 !py-1.5 text-xs" data-testid="link-recorded-fix"><MonitorPlay size={14} /> Watch the recorded fix</Link>
+            <Link href={`/results/${id}`} className="btn !px-3 !py-1.5 text-xs" data-testid="link-back-results">Back to results</Link>
           </div>
 
           <div className="fix-columns">

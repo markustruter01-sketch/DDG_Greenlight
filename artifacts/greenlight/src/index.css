@@ -509,10 +509,50 @@ select.field option{background:#0B1F2A}
 .orbit-zoom{display:flex;align-items:center;gap:4px}
 .orbit-tour-shade{position:absolute;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(3,10,14,.36);backdrop-filter:blur(3px)}
 .orbit-tour-card{width:min(420px,calc(100% - 28px));padding:20px;background:rgba(8,24,33,.94);text-align:left}
-.orbit-tour-caption{position:absolute;left:50%;bottom:10px;z-index:30;width:min(690px,calc(100% - 24px));transform:translateX(-50%);padding:10px 14px;background:rgba(6,19,26,.92)}
-.tour-caption-left{left:12px;transform:none;width:min(430px,calc(100% - 484px))}
+.orbit-tour-caption{position:absolute;left:50%;bottom:14px;z-index:30;width:min(1040px,calc(100% - 32px));transform:translateX(-50%);padding:18px 24px 14px;background:rgba(6,19,26,.9);border-color:rgba(0,229,255,.45);box-shadow:0 18px 60px rgba(0,0,0,.55),0 0 40px rgba(0,229,255,.12);animation:tour-cap-in .45s ease-out}
+.tour-cap-kicker{color:#00E5FF!important;font-size:12px}
+.tour-cap-title{margin-top:4px;font-size:clamp(22px,2.3vw,34px);font-weight:600;line-height:1.15;color:#F7FBFF;text-wrap:balance}
+.tour-cap-body{margin-top:8px;font-size:clamp(16px,1.45vw,22px);line-height:1.45;color:#E3F1F8;max-width:62ch;text-wrap:pretty}
+.tour-caption-left{left:16px;transform:none;width:min(720px,calc(100% - 492px))}
 .orbit-tour-caption-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.orbit-tour-caption-controls{display:flex;flex:none;align-items:center;gap:5px}
+.orbit-tour-caption-controls{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:14px}
+.tour-cap-btn{padding:.5rem .85rem!important;font-size:13px!important}
+.tour-cap-btn.is-on{border-color:#00E5FF;color:#00E5FF}
+@keyframes tour-cap-in{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+.tour-caption-left{animation:none}
+/* Tour arrow: a glowing DDG-cyan line from the caption to what it is about */
+.tour-pointer{position:fixed;inset:0;width:100vw;height:100vh;z-index:90;pointer-events:none;overflow:visible}
+.tp-draw{animation:tp-fade .35s ease-out}
+.tp-line{fill:none;stroke-width:3;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:tp-draw .7s cubic-bezier(.3,.7,.2,1) forwards}
+.tp-flow{fill:none;stroke:#F7FBFF;stroke-width:3;stroke-linecap:round;stroke-dasharray:.06 .94;opacity:.85;animation:tp-flow 1.8s linear .7s infinite}
+.tp-head{fill:none;stroke:#F7FBFF;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;opacity:0;animation:tp-fade .2s ease-out .55s forwards}
+.tp-box{fill:none;stroke:#00E5FF;stroke-width:2;opacity:0;animation:tp-fade .25s ease-out .6s forwards,tp-pulse 1.6s ease-in-out .85s infinite}
+.tp-ring{fill:rgba(0,229,255,.12);stroke:#00E5FF;stroke-width:2.5}
+.tp-ping{fill:none;stroke:#00E5FF;stroke-width:2;animation:tp-ping 1.4s ease-out infinite;transform-box:fill-box;transform-origin:center}
+.tp-label rect{fill:rgba(6,19,26,.92);stroke:rgba(0,229,255,.7);stroke-width:1.5}
+.tp-label text{fill:#F7FBFF;font:600 12.5px/1 "JetBrains Mono",monospace;letter-spacing:.08em}
+.tp-label{opacity:0;animation:tp-fade .3s ease-out .65s forwards}
+@keyframes tp-draw{to{stroke-dashoffset:0}}
+@keyframes tp-flow{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes tp-fade{from{opacity:0}to{opacity:1}}
+@keyframes tp-pulse{0%,100%{stroke-opacity:1}50%{stroke-opacity:.35}}
+@keyframes tp-ping{from{transform:scale(1);opacity:.9}to{transform:scale(2.4);opacity:0}}
+/* Tour timer along the bottom edge of the screen */
+.tour-progress{position:fixed;left:0;right:0;bottom:0;z-index:95;pointer-events:none;padding:0 0 env(safe-area-inset-bottom,0px)}
+.tour-progress-meta{display:flex;justify-content:flex-end;gap:12px;padding:0 16px 4px}
+.tour-progress-meta .lbl{font-size:10px;color:#CFE3EE;text-shadow:0 1px 6px #000}
+.tour-progress-track{display:flex;gap:3px;height:6px;background:rgba(6,19,26,.7)}
+.tour-progress-seg{position:relative;flex-basis:0;overflow:hidden;background:rgba(124,201,232,.18)}
+.tour-progress-seg.is-done{background:rgba(0,229,255,.55)}
+.tour-progress-seg.is-now{background:rgba(124,201,232,.28)}
+.tour-progress-fill{position:absolute;inset:0;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,#007A99,#00E5FF);box-shadow:0 0 14px rgba(0,229,255,.7)}
+/* Floating navigation */
+.float-nav{flex:none;display:flex;justify-content:center;flex-wrap:wrap;gap:10px;padding:8px 16px 16px;position:relative;z-index:20}
+.float-nav-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:999px;font:500 13px/1 'Space Grotesk',sans-serif;letter-spacing:.01em;color:#CFE3EE;background:rgba(11,31,42,.62);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid rgba(124,201,232,.3);box-shadow:0 8px 24px rgba(0,0,0,.4);transition:transform .2s,border-color .2s,color .2s,box-shadow .2s}
+.float-nav-btn:hover{transform:translateY(-2px);border-color:#00E5FF;color:#F7FBFF;box-shadow:0 10px 28px rgba(0,0,0,.45),0 0 18px rgba(0,229,255,.25)}
+.float-nav-btn.is-on{color:#F7FBFF;border-color:#00E5FF;background:rgba(0,122,153,.42);box-shadow:0 8px 24px rgba(0,0,0,.4),0 0 22px rgba(0,229,255,.3)}
+.float-nav-btn svg{color:#00E5FF}
+@media (prefers-reduced-motion:reduce){.tp-line{stroke-dashoffset:0;animation:none}.tp-flow,.tp-ping,.tp-box{animation:none}.tp-head,.tp-label,.tp-box{opacity:1;animation:none}.orbit-tour-caption{animation:none}}
 .tour-focusing .result-band,.tour-focusing .readiness-column{opacity:.2;transition:opacity .25s ease}
 .readiness-column.is-tour-highlight{outline:2px solid #00E5FF;outline-offset:-2px;box-shadow:0 0 0 4px rgba(0,229,255,.22),0 0 28px rgba(0,229,255,.4);opacity:1!important}
 [data-tour-highlight="true"]{position:relative;z-index:80;outline:2px solid #00E5FF!important;outline-offset:2px;box-shadow:0 0 0 6px rgba(0,229,255,.22),0 0 28px rgba(0,229,255,.48)!important}
@@ -546,7 +586,10 @@ select.field option{background:#0B1F2A}
   .orbit-controls-right{margin-left:auto}
   .orbit-legend{display:none}
   .orbit-layer-pill{padding:6px}
-  .orbit-tour-caption{bottom:6px;padding:8px}
+  .orbit-tour-caption{bottom:6px;padding:10px 12px}
+  .float-nav{gap:6px;padding:6px 8px 10px}
+  .float-nav-btn{padding:8px 11px;font-size:12px}
+  .float-nav-btn span{display:none}
   .orbit-tour-caption-row{align-items:flex-start;flex-direction:column;gap:6px}
   .orbit-tour-caption-controls{width:100%;justify-content:flex-end}
   .tour-caption-left{left:6px;width:calc(100% - 12px)}

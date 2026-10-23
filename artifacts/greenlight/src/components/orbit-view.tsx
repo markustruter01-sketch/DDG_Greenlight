@@ -53,6 +53,14 @@ export type OrbitControlApi = {
   stopAuto: () => void;
   snapshot: () => OrbitSnapshot;
   restore: (snapshot: OrbitSnapshot) => Promise<boolean>;
+  /** Shared-evidence themes that have links, most links first. */
+  linkThemes: () => { theme: number; count: number }[];
+  /** Draw one theme's links bold and fly the camera to them (null clears). */
+  showcaseLinks: (theme: number | null, shot?: { az?: number; el?: number; dist?: number; seconds?: number; drift?: number }) => Promise<boolean>;
+  /** The two requirement keys at the ends of a theme's longest link. */
+  linkEnds: (theme: number) => { a: string; b: string } | null;
+  /** Where a requirement dot (by key), a theme's link arc or a scene point is on screen, in client pixels. */
+  screenOf: (target: string | { linkTheme: number } | { world: [number, number, number] }) => { x: number; y: number } | null;
 };
 
 const smooth = (value: number) => {
@@ -145,6 +153,8 @@ export function OrbitView({
     let spinElapsed = 0;
     let lastNow = 0;
     let raf = 0;
+    let canvasEl: HTMLCanvasElement | null = null;
+    const projected = new THREE.Vector3();
 
     const copyRig = (value: any) => ({ ...value, target: [...value.target] });
     const stopFlight = () => {
@@ -339,6 +349,33 @@ export function OrbitView({
         scene.setLongitude(spin);
         return flyTo(snapshot.rig, { seconds: 1.1, lift: 0.08 });
       },
+      linkThemes: () => (fallback ? [] : scene.linkThemes()),
+      showcaseLinks: (theme, shot = {}) => {
+        if (fallback) return Promise.resolve(false);
+        scene.showcaseLinks(theme);
+        if (theme === null) return Promise.resolve(true);
+        const apex = scene.linkApex(theme);
+        if (!apex) return Promise.resolve(false);
+        autoStopped = true;
+        const target = [apex.y, apex.z, apex.x];
+        const outward = Math.atan2(target[0], target[2]);
+        return flyTo({
+          target,
+          az: outward + ((shot.az ?? 24) * Math.PI) / 180,
+          el: ((shot.el ?? 34) * Math.PI) / 180,
+          dist: shot.dist ?? 12,
+        }, { seconds: shot.seconds ?? 2.4, drift: shot.drift ?? 2.5, lift: 0.05 });
+      },
+      linkEnds: (theme) => (fallback ? null : scene.linkEnds(theme)),
+      screenOf: (target) => {
+        if (fallback || !canvasEl) return null;
+        const world = typeof target === 'string' ? scene.worldOf(target) : 'world' in target ? scene.worldOf(target.world) : scene.linkApex(target.linkTheme);
+        if (!world) return null;
+        projected.copy(world).project(camera);
+        if (projected.z > 1 || Math.abs(projected.x) > 1.05 || Math.abs(projected.y) > 1.05) return null;
+        const r = canvasEl.getBoundingClientRect();
+        return { x: r.left + ((projected.x + 1) / 2) * r.width, y: r.top + ((1 - projected.y) / 2) * r.height };
+      },
     };
     api.current = { scene, rig, themes, home: homeCentered, controls };
     onControlsReadyRef.current?.(controls);
@@ -375,6 +412,7 @@ export function OrbitView({
     ro.observe(el);
 
     const cv = renderer.domElement as HTMLCanvasElement;
+    canvasEl = cv;
     const rect = () => cv.getBoundingClientRect();
     const down = (e: PointerEvent) => {
       if (e.button !== 0) return;
@@ -485,6 +523,7 @@ export function OrbitView({
       ro.disconnect();
       scene.dispose();
       renderer.dispose();
+      canvasEl = null;
       cv.remove();
       cv.removeEventListener('pointerdown', down);
       cv.removeEventListener('pointermove', move);
@@ -573,9 +612,9 @@ export function OrbitView({
           </>
         )}
         <div className="lbl pointer-events-none absolute left-4 top-3 hidden gap-4 sm:flex">
-          <span style={{ color: '#7CC9E8' }}>Safety</span>
-          <span style={{ color: '#00E5FF' }}>Security</span>
-          <span style={{ color: '#F7FBFF' }}>AI</span>
+          <span style={{ color: '#7CC9E8' }} data-tour-target="ring-saf">Safety</span>
+          <span style={{ color: '#00E5FF' }} data-tour-target="ring-sec">Security</span>
+          <span style={{ color: '#F7FBFF' }} data-tour-target="ring-ai">AI</span>
         </div>
         {tourButton && <div className="absolute right-3 top-3 z-20">{tourButton}</div>}
         {tourCaption}
@@ -587,7 +626,7 @@ export function OrbitView({
             <button key={layer.id}
               onClick={() => setLayers((current) => ({ ...current, [layer.id]: !current[layer.id] }))}
               className={`orbit-layer-pill ${layers[layer.id] ? 'is-active' : ''}`}
-              aria-pressed={layers[layer.id]} data-testid={`button-layer-${layer.id}`}>
+              aria-pressed={layers[layer.id]} data-testid={`button-layer-${layer.id}`} data-tour-target={`layer-${layer.id}`}>
               <span className="orbit-layer-dot" style={{ background: layer.id === 'mustfix' ? '#FF5C6E' : layer.id === 'gaps' ? '#F5C451' : layer.id === 'passing' ? '#4FD99A' : '#00E5FF' }} />
               {layer.name}
             </button>
@@ -595,7 +634,7 @@ export function OrbitView({
         </div>
         <div className="orbit-controls-center">{controlsCenter}</div>
         <div className="orbit-controls-right">
-          <div className="orbit-legend" aria-label="Requirement status legend">
+          <div className="orbit-legend" aria-label="Requirement status legend" data-tour-target="status-legend">
             <span><i style={{ background: '#FF5C6E' }} />Must fix</span>
             <span><i style={{ background: '#F5C451' }} />Partial</span>
             <span><i style={{ background: '#4FD99A' }} />Met</span>
