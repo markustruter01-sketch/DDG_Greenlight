@@ -250,6 +250,15 @@ export default function Results() {
     const at = (target: string | { linkTheme: number } | { world: [number, number, number] }, label?: string, key = JSON.stringify(target)) =>
       setPointer({ key, target: { kind: 'point', resolve: () => orbitControls.current?.screenOf(target) ?? null, label } });
     const clear = () => setPointer(null);
+    // A dot on each ring to point at: a failing must-fix item if there is one, else any rated item.
+    const ringDot = (lens: string) => {
+      const onRing = run.findings.filter((f) => f.lens === lens && baselineStatuses[f.key] !== 'NA');
+      return (onRing.find((f) => f.blocking && baselineStatuses[f.key] === 'N') ?? onRing.find((f) => baselineStatuses[f.key] === 'N') ?? onRing[0])?.key;
+    };
+    const ring = (lens: string, label: string) => {
+      const key = ringDot(lens);
+      if (key) at(key, label); else dom(`ring-${lens}`, label);
+    };
     // Every slide starts from a clean scene, then sets up its own.
     const reset: Cue = {
       at: 0,
@@ -273,9 +282,12 @@ export default function Results() {
       ],
       // 1 · Three rings
       [
-        { at: 0, run: () => { void controls.home(); controls.emphasis('saf'); controls.pulse('saf', 3000); dom('ring-saf', 'Safety · inner ring'); } },
-        { at: 4.5, run: () => { controls.emphasis('sec'); controls.pulse('sec', 3000); dom('ring-sec', 'Security · middle ring'); void controls.shot({ target: [0, 0, 0], az: 30, el: 26, dist: 26, seconds: 3, drift: 1 }); } },
-        { at: 9, run: () => { controls.emphasis('ai'); controls.pulse('ai', 3000); dom('ring-ai', 'AI · outer ring'); void controls.shot({ target: [0, 0, 0], az: 70, el: 32, dist: 30, seconds: 3, drift: 1.5 }); } },
+        { at: 0, run: () => { void controls.home(); controls.emphasis('saf'); controls.pulse('saf', 3000); } },
+        { at: 1.3, run: () => ring('saf', 'Safety · inner ring') },
+        { at: 4.5, run: () => { controls.emphasis('sec'); controls.pulse('sec', 3000); void controls.shot({ target: [0, 0, 0], az: 30, el: 26, dist: 26, seconds: 3, drift: 1 }); } },
+        { at: 6, run: () => ring('sec', 'Security · middle ring') },
+        { at: 9, run: () => { controls.emphasis('ai'); controls.pulse('ai', 3000); void controls.shot({ target: [0, 0, 0], az: 70, el: 32, dist: 30, seconds: 3, drift: 1.5 }); } },
+        { at: 10.5, run: () => ring('ai', 'AI · outer ring') },
       ],
       // 2 · Every dot is one requirement
       [
@@ -290,20 +302,26 @@ export default function Results() {
       ],
       // 4 · Links show shared evidence
       (() => {
-        const themes = controls.linkThemes();
+        // A handful of links reads as "these connect"; dozens read as noise. Prefer
+        // groups of 3 to 12 links, closest to 6.
+        const all = controls.linkThemes();
+        const themes = [...all].sort((x, y) => {
+          const score = (n: number) => (n >= 3 && n <= 12 ? Math.abs(n - 6) : 100 + Math.abs(n - 6));
+          return score(x.count) - score(y.count);
+        });
         const first = themes[0]?.theme;
         const second = themes[1]?.theme;
         const ends = first == null ? null : controls.linkEnds(first);
         if (first == null) return [{ at: 0, run: () => { controls.setLayer('links', true); controls.emphasis('links'); dom('layer-links', 'Links layer'); } }];
         return [
-          { at: 0, run: () => { controls.setLayer('links', true); controls.emphasis('links'); void controls.showcaseLinks(first, { az: 24, el: 34, dist: 12, seconds: 2.4 }); } },
+          { at: 0, run: () => { controls.setLayer('links', true); controls.emphasis('links'); void controls.showcaseLinks(first, { az: 24, el: 40, dist: 20, seconds: 2.4 }); } },
           { at: 1.8, run: () => at({ linkTheme: first }, `Shared evidence · ${themes[0].count} link${themes[0].count === 1 ? '' : 's'}`) },
           ...(ends ? [
             { at: 5, run: () => { void controls.focus(ends.a); at(ends.a, nameOf(ends.a)); } },
             { at: 8.5, run: () => { void controls.focus(ends.b); at(ends.b, nameOf(ends.b)); } },
           ] : []),
           ...(second != null ? [
-            { at: 12, run: () => { controls.select(null); void controls.showcaseLinks(second, { az: -40, el: 30, dist: 13, seconds: 2.2 }); at({ linkTheme: second }, 'Another shared fix'); } },
+            { at: 12, run: () => { controls.select(null); void controls.showcaseLinks(second, { az: -40, el: 36, dist: 20, seconds: 2.2 }); at({ linkTheme: second }, 'Another shared fix'); } },
           ] : [{ at: 12, run: () => dom('layer-links', 'Links layer') }]),
         ];
       })(),

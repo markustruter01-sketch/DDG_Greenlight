@@ -19,7 +19,7 @@ type Geometry = {
   angle: number;
   box?: { x: number; y: number; w: number; h: number };
   dot?: { x: number; y: number };
-  label?: { x: number; y: number; anchor: 'start' | 'end' };
+  label?: { x: number; y: number; anchor: 'start' | 'end' | 'middle' };
 };
 
 const CAPTION = '[data-testid="tour-caption"]';
@@ -53,12 +53,12 @@ function measure(target: PointerTarget): Geometry | null {
   const vw = window.innerWidth, vh = window.innerHeight;
   let o: { x: number; y: number };
   if (cap && cap.width) {
-    const above = ty < cap.top;
-    const below = ty > cap.bottom;
+    const above = ty < cap.top - 40;
     const x = Math.max(cap.left + 36, Math.min(cap.right - 36, tx));
     if (above) o = { x, y: cap.top - 4 };
-    else if (below) o = { x, y: cap.bottom + 4 };
-    else o = { x: tx < cap.left ? cap.left - 4 : cap.right + 4, y: cap.top + cap.height / 2 };
+    // Targets beside or just below the caption (the control row): leave from the
+    // caption's nearer side so the arrow sweeps round instead of being a stub.
+    else o = { x: tx < cap.left + cap.width / 2 ? cap.left - 4 : cap.right + 4, y: cap.top + cap.height * 0.35 };
   } else o = { x: vw / 2, y: vh * 0.72 };
   // Stop short of the target so the head does not cover it.
   let e: { x: number; y: number };
@@ -74,9 +74,16 @@ function measure(target: PointerTarget): Geometry | null {
   const bow = Math.min(120, len * 0.22) * (dx >= 0 ? -1 : 1);
   const c = { x: o.x + dx / 2 + (-dy / len) * bow, y: o.y + dy / 2 + (dx / len) * bow };
   const angle = Math.atan2(e.y - c.y, e.x - c.x);
-  const lx = rect ? (tx > vw / 2 ? rect.left - 12 : rect.right + 12) : tx + (tx > vw / 2 ? -40 : 40);
-  const ly = rect ? rect.top + rect.height / 2 : ty - 34;
-  return { o, c, e, angle, box, dot, label: target.label ? { x: lx, y: ly, anchor: tx > vw / 2 ? 'end' : 'start' } : undefined };
+  // Labels go where they cover nothing: under things in the header, over things
+  // in the bottom bar, beside everything else.
+  let label: Geometry['label'];
+  if (target.label) {
+    if (rect && ty < vh * 0.14) label = { x: Math.min(vw - 140, Math.max(140, tx)), y: rect.bottom + 26, anchor: 'middle' };
+    else if (rect && ty > vh * 0.8) label = { x: Math.min(vw - 140, Math.max(140, tx)), y: rect.top - 26, anchor: 'middle' };
+    else if (rect) label = { x: tx > vw / 2 ? rect.left - 12 : rect.right + 12, y: rect.top + rect.height / 2, anchor: tx > vw / 2 ? 'end' : 'start' };
+    else label = { x: tx + (tx > vw / 2 ? -40 : 40), y: ty - 34, anchor: tx > vw / 2 ? 'end' : 'start' };
+  }
+  return { o, c, e, angle, box, dot, label };
 }
 
 const same = (a: Geometry | null, b: Geometry | null) =>
@@ -130,8 +137,8 @@ export function TourPointer({ target, targetKey }: { target: PointerTarget | nul
         </>}
         {g.label && labelText && (
           <g className="tp-label">
-            <rect x={g.label.anchor === 'end' ? g.label.x - labelW : g.label.x} y={g.label.y - 15} width={labelW} height="30" rx="15" />
-            <text x={g.label.anchor === 'end' ? g.label.x - 11 : g.label.x + 11} y={g.label.y + 4.5} textAnchor={g.label.anchor}>{labelText}</text>
+            <rect x={g.label.anchor === 'end' ? g.label.x - labelW : g.label.anchor === 'middle' ? g.label.x - labelW / 2 : g.label.x} y={g.label.y - 15} width={labelW} height="30" rx="15" />
+            <text x={g.label.anchor === 'end' ? g.label.x - 11 : g.label.anchor === 'middle' ? g.label.x : g.label.x + 11} y={g.label.y + 4.5} textAnchor={g.label.anchor}>{labelText}</text>
           </g>
         )}
       </g>
