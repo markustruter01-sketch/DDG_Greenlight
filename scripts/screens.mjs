@@ -27,6 +27,17 @@ const runId = (Array.isArray(projects) ? projects : []).find((p) => p.latestRunI
 note(`demo run: ${runId || 'none'}`);
 if (!runId) { await fs.writeFile(`${out}/log.txt`, log.join('\n')); process.exit(1); }
 
+// First arrival: the loader over the landscape, then the home page once it fades.
+await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(2500);
+await shot('0a-loader-2s');
+await page.waitForTimeout(5500);
+await shot('0b-home');
+await page.locator('[data-testid=button-watch-how]').click().catch(() => note('no watch button'));
+await page.waitForTimeout(2500);
+await shot('0c-explainer-modal');
+await page.keyboard.press('Escape');
+
 // A clean results screen first (tour already seen), then the tour from a fresh state.
 await page.addInitScript(() => { try { localStorage.setItem('ddg-greenlight-results-tour-seen', '1'); } catch {} });
 await page.goto(`${base}/results/${runId}`, { waitUntil: 'networkidle' });
