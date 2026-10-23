@@ -103,6 +103,9 @@ async function main() {
   console.log(`Assessing ${project} against ${standards.join(", ")}`);
   const stage = await fs.mkdtemp(path.join(os.tmpdir(), "greenlight-record-"));
   await copyTree(repo, repo, stage, NEVER_COPIED);
+  // The subject's installed dependencies are shared by symlink so its tests can run; the
+  // link is never read by the engine (symlinks are skipped) nor by Claude (node_modules is blocked).
+  if (await fs.stat(path.join(repo, "node_modules")).catch(() => null)) await fs.symlink(path.join(repo, "node_modules"), path.join(stage, "node_modules"), "dir");
   const before = await assessFolder(stage, project, standards);
   for (const s of before.result.standards) console.log(`  ${s.short.padEnd(14)} ${String(s.readiness).padStart(3)}%  ${s.verdict}`);
   const wave = before.result.waves.find((w: any) => w.number === waveNumber);
