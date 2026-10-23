@@ -65,7 +65,7 @@ for (let i = 0; i < 48; i++) {
     const g = document.querySelector('.tour-pointer');
     if (!g) return 'no arrow';
     const d = g.querySelector('.tp-line')?.getAttribute('d') ?? '';
-    return `${g.querySelector('.tp-label text')?.textContent ?? '(no label)'} · ${g.querySelector('.tp-box') ? 'box' : g.querySelector('.tp-ring') ? 'ring' : 'plain'} · ${d.slice(0, 60)} · caption ${document.querySelector('[data-testid=tour-caption]')?.getAttribute('data-slot')}`;
+    return `${document.querySelector('.tp-label')?.textContent ?? '(no label)'} · ${g.querySelector('.tp-box') ? 'box' : g.querySelector('.tp-ring') ? 'ring' : 'plain'} · ${d.slice(0, 60)} · caption ${document.querySelector('[data-testid=tour-caption]')?.getAttribute('data-slot')}`;
   }).catch(() => '?');
   note(`  arrow: ${arrow}`);
   await shot(`tour-${String(i).padStart(2, '0')}-slide${n}-${Math.round((Date.now() - t0) / 1000)}s`);
