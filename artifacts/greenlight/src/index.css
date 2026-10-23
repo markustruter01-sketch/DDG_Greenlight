@@ -691,3 +691,4 @@ select.field option{background:#0B1F2A}
 .fc-outcome-bar i{background:#7CC9E8}.fc-outcome-bar b{background:#4FD99A;transition:width 1.2s ease}
 @media (max-width:1100px){.fc{padding:6px 8px}.fc-body{grid-template-columns:1fr;grid-template-rows:minmax(120px,.7fr) minmax(200px,1.4fr) minmax(120px,.8fr)}.fc-stages{display:none}.fc-pct{font-size:34px;min-width:80px}.fc-banner{min-width:0;width:92%}}
 @media (prefers-reduced-motion:reduce){.fc-line,.fc-banner,.fc-spin,.fc-badge-live,.fc-cursor .fc-txt{animation:none}.fc-banner{opacity:1}}
+.explainer-video{display:block;width:100%;aspect-ratio:16/9;border-radius:14px;background:#000;border:1px solid rgba(124,201,232,.3);box-shadow:0 18px 60px rgba(0,0,0,.5)}

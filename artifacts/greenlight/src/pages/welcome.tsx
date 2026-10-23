@@ -1,6 +1,12 @@
+import { useState } from 'react';
 import { Link } from 'wouter';
-import { ArrowDownToLine, Braces, Check, ClipboardCheck, FileSearch, ListChecks, ShieldCheck } from 'lucide-react';
+import { ArrowDownToLine, Braces, Check, ClipboardCheck, FileSearch, ListChecks, Play, ShieldCheck } from 'lucide-react';
 import { Shell, Logo } from '@/components/shell';
+import { Modal } from '@/components/gl';
+
+/** The 45-second explainer (public/explainer.mp4), rendered from the DDG motion kit. */
+const EXPLAINER = `${import.meta.env.BASE_URL}explainer.mp4`;
+const EXPLAINER_POSTER = `${import.meta.env.BASE_URL}explainer-poster.jpg`;
 
 const STEPS = [
   ['Plug in the code', Braces],
@@ -12,6 +18,7 @@ const STEPS = [
 ] as const;
 
 export default function Welcome() {
+  const [watch, setWatch] = useState(false);
   return (
     <Shell bg="glacier-ice.webp" chrome={false}>
       <div className="welcome-layout" data-testid="welcome-page">
@@ -56,10 +63,18 @@ export default function Welcome() {
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2">
           <Link href="/start" className="btn btn-primary !px-5 !py-2.5" data-testid="link-start-assessment">Start an assessment <ArrowDownToLine size={15} /></Link>
-          <button className="btn !px-5 !py-2.5" disabled data-testid="button-watch-how">Watch how it works · 1 MIN</button>
+          <button className="btn !px-5 !py-2.5" onClick={() => setWatch(true)} data-testid="button-watch-how"><Play size={15} /> Watch how it works · 45 s</button>
         </div>
         <div className="mx-auto rounded-full border px-3 py-1 lbl !text-[9px]" style={{ borderColor: 'rgba(124,201,232,.25)' }}>DEVELOPED BY DIGITAL DYNAMICS</div>
       </div>
+      <Modal open={watch} onClose={() => setWatch(false)} title="How Greenlight works" wide>
+        {watch && (
+          <video className="explainer-video" src={EXPLAINER} poster={EXPLAINER_POSTER} controls autoPlay playsInline preload="auto" data-testid="video-explainer">
+            Your browser cannot play this video.
+          </video>
+        )}
+        <p className="lbl mt-3 !normal-case !tracking-normal">Checked by rules. Fixed by Claude. Re-checked by rules.</p>
+      </Modal>
     </Shell>
   );
 }

@@ -49,6 +49,14 @@ for (let i = 0; i < 48; i++) {
   await page.waitForTimeout(3500 - ((Date.now() - t0) % 3500));
   const slide = await page.locator('[data-testid=tour-caption] .tour-cap-kicker').textContent().catch(() => '');
   const n = (slide || '').match(/^(\d+)/)?.[1] ?? 'x';
+  // What the arrow is doing, for review without a browser.
+  const arrow = await page.evaluate(() => {
+    const g = document.querySelector('.tour-pointer');
+    if (!g) return 'no arrow';
+    const d = g.querySelector('.tp-line')?.getAttribute('d') ?? '';
+    return `${g.querySelector('.tp-label text')?.textContent ?? '(no label)'} · ${g.querySelector('.tp-box') ? 'box' : g.querySelector('.tp-ring') ? 'ring' : 'plain'} · ${d.slice(0, 60)} · caption ${document.querySelector('[data-testid=tour-caption]')?.getAttribute('data-slot')}`;
+  }).catch(() => '?');
+  note(`  arrow: ${arrow}`);
   await shot(`tour-${String(i).padStart(2, '0')}-slide${n}-${Math.round((Date.now() - t0) / 1000)}s`);
   if (await page.locator('[data-testid=button-tour-done]').isVisible().catch(() => false)) break;
 }
