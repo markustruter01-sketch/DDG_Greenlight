@@ -1,0 +1,46 @@
+name: Screens of the live site
+
+# Plays the guided tour and the recorded fix on the published site and pushes
+# the screenshots to the `screens` branch, so the build can be reviewed (and
+# the pitch rehearsed) without a browser in the authoring session.
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Site to capture
+        default: https://ddg-greenlight.replit.app
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save --no-package-lock playwright@1.49.1
+          npx playwright install --with-deps chromium
+
+      - name: Capture
+        run: node scripts/screens.mjs "${{ inputs.url }}"
+
+      - name: Push to the screens branch
+        if: always()
+        run: |
+          cd screens
+          git init -q -b screens
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Screens of ${{ inputs.url }} at ${{ github.sha }}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" screens
