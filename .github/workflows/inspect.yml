@@ -1,0 +1,49 @@
+name: Inspect a dependency
+
+# Prints part of an installed package to a check run, because the authoring
+# session cannot install dependencies or read job logs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: Path under node_modules to read
+        default: '@anthropic-ai/claude-agent-sdk/sdk.d.ts'
+        required: true
+      pattern:
+        description: grep -E pattern to look for
+        default: 'HookCallback|PreToolUse|canUseTool'
+        required: true
+      context:
+        description: Lines of context after each match
+        default: '25'
+        required: true
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Grep and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          f=$(find node_modules artifacts/*/node_modules -path "*/${{ inputs.file }}" 2>/dev/null | head -1)
+          echo "file: $f" > out.txt
+          grep -n -E -A "${{ inputs.context }}" "${{ inputs.pattern }}" "$f" | head -c 60000 >> out.txt || echo "no match" >> out.txt
+          gh api -X POST "repos/${{ github.repository }}/check-runs" \
+            -f name="inspect" -f head_sha="${{ github.sha }}" -f status=completed -f conclusion=neutral \
+            -f "output[title]=Inspect ${{ inputs.file }}" -F "output[summary]=@out.txt" >/dev/null
