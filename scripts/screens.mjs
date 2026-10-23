@@ -27,9 +27,18 @@ const runId = (Array.isArray(projects) ? projects : []).find((p) => p.latestRunI
 note(`demo run: ${runId || 'none'}`);
 if (!runId) { await fs.writeFile(`${out}/log.txt`, log.join('\n')); process.exit(1); }
 
+// A clean results screen first (tour already seen), then the tour from a fresh state.
+await page.addInitScript(() => { try { localStorage.setItem('ddg-greenlight-results-tour-seen', '1'); } catch {} });
+await page.goto(`${base}/results/${runId}`, { waitUntil: 'networkidle' });
+await page.waitForTimeout(5000);
+await shot('00-results');
+await page.locator('[data-testid^=button-annunciator-]').first().click().catch(() => {});
+await page.waitForTimeout(1500);
+await shot('01-results-theme');
+await page.keyboard.press('Escape').catch(() => {});
+await page.evaluate(() => { try { localStorage.removeItem('ddg-greenlight-results-tour-seen'); } catch {} });
 await page.goto(`${base}/results/${runId}`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(4000);
-await shot('00-results');
 const prompt = page.locator('[data-testid=button-tour-play]');
 if (await prompt.isVisible().catch(() => false)) await prompt.click();
 else await page.locator('[data-testid=button-play-tour]').click();
