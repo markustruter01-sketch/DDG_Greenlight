@@ -135,7 +135,8 @@ export function applyEvent(v: FixView, e: FixEvent): FixView {
       push({ at: e.at, kind: 'test', text: `${e.command} · ${e.status}${e.output ? `\n${e.output}` : ''}`, tone: e.status === 'pass' ? 'ok' : e.status === 'fail' ? 'bad' : 'dim' });
       break;
     case 'cost':
-      n.cost = { usd: e.usd, turns: e.turns };
+      // Each agent round reports its own cost; the screen shows the running total.
+      n.cost = { usd: (v.cost?.usd ?? 0) + e.usd, turns: (v.cost?.turns ?? 0) + e.turns };
       break;
     case 'done':
       n.done = { summary: e.summary, filesChanged: e.filesChanged, durationMs: e.durationMs };
