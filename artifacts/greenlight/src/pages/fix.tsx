@@ -38,7 +38,7 @@ function recordingOf(fr: FixRun, before: AssessmentRun, after?: AssessmentRun): 
   };
 }
 
-const DISABLED_MSG = 'Add an Anthropic API key to enable fixing';
+const DISABLED_MSG = 'Live fixing is off on this deployment';
 const WORKING = /run|pend|queue|start|prepar|generat|verif|appl|work|propos/i;
 const AWAITING = /await|review|ready|propos/i;
 
@@ -245,7 +245,7 @@ export default function Fix() {
                   {start.isPending ? 'Starting' : enabled && !signedIn ? 'Sign in to fix' : 'Start AI fix'}
                 </button>
               </div>
-              {!cfg.isLoading && !enabled && <p className="mt-2 flex-none text-xs" data-testid="text-fix-disabled"><Dot color="#F5C451" word={DISABLED_MSG} />{reason && <span className="mt-1 block text-[10px] text-[#CFE3EE]">{reason}</span>}</p>}
+              {!cfg.isLoading && !enabled && <p className="mt-2 flex-none text-xs" data-testid="text-fix-disabled"><Dot color="#F5C451" word={DISABLED_MSG} /><span className="mt-1 block text-[10px] text-[#CFE3EE]">{reason || 'The recorded session shows the same run end to end.'} <Link href={`/replay/${DEMO_RECORDING}`} className="underline" style={{ color: '#00E5FF' }}>Watch it</Link>.</span></p>}
               {start.isError && <p className="mt-2 flex-none text-xs"><Dot color="#FF5C6E" word={err?.message || 'Could not start the fix'} />{/expire|working copy|re-?upload/i.test(err?.message ?? '') && <span className="mt-1 block text-[10px]">The working copy expired. <Link href="/start" className="underline">Upload the zip again</Link> to continue.</span>}</p>}
               {selectedFix?.pullRequestUrl && <div className="lbl mt-2 flex-none !text-[9px]">Pull request opened. Greenlight never merges it for you; review and merge it yourself.</div>}
             </section>

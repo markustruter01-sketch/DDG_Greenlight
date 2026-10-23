@@ -91,6 +91,30 @@ if (bb) {
 await page.keyboard.press('End');
 await page.waitForTimeout(1500);
 await shot('85-replay-end');
+// From the end card to the orbit: lights turn green for the clauses the fix closed.
+await page.locator('[data-testid=button-outcome-exit]').click().catch(() => note('no outcome exit'));
+await page.waitForTimeout(1000);
+await shot('86-after-orbit-before-flip');
+await page.waitForTimeout(3500);
+await shot('87-after-orbit');
+await page.locator('[data-testid=button-show-before]').click().catch(() => {});
+await page.waitForTimeout(1200);
+await shot('88-after-orbit-toggled-before');
+
+// How it checks, a finding's rule block, and the 404.
+await page.goto(`${base}/how-it-checks`, { waitUntil: 'networkidle' });
+await page.waitForTimeout(1500);
+await shot('90-how-it-checks');
+await page.goto(`${base}/results/${runId}`, { waitUntil: 'networkidle' });
+await page.waitForTimeout(4000);
+await page.locator('[data-testid^=button-annunciator-]').first().click().catch(() => {});
+await page.waitForTimeout(1500);
+await page.locator('[data-testid^=row-finding-] button').first().click().catch(() => {});
+await page.waitForTimeout(800);
+await shot('91-finding-rule-block');
+await page.goto(`${base}/no-such-page`, { waitUntil: 'networkidle' });
+await page.waitForTimeout(1200);
+await shot('92-not-found');
 
 await fs.writeFile(`${out}/log.txt`, log.join('\n'));
 await browser.close();

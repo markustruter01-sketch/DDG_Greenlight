@@ -207,6 +207,20 @@ components:
         githubEnabled: { type: boolean }
         checks: { type: string }
         engineVersion: { type: string }
+        fixingDisabledReason: { type: string }
+        rules:
+          type: object
+          description: Every written check, by id, in Greenlight's own words
+          additionalProperties:
+            type: object
+            required: [title, theme, fix]
+            properties:
+              title: { type: string }
+              theme: { type: string }
+              fix: { type: string }
+        ruleCount: { type: integer }
+        factCount: { type: integer }
+        itemCount: { type: integer }
     Project:
       type: object
       required: [id, name, source, updatedAt, runCount, latestRunId, readiness, verdict]

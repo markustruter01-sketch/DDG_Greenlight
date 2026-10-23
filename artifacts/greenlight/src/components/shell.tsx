@@ -60,9 +60,9 @@ export function Shell({
           {runMeta && <span className="lbl hidden truncate !normal-case !tracking-normal sm:block">{runMeta}</span>}
         </Link>
         <div className="flex min-w-0 items-center justify-end gap-2">
-          <span className="lbl rounded-xl border px-3 py-2" style={{ borderColor: 'rgba(124,201,232,.3)' }} data-testid="text-checks" data-tour-target="rules-badge" data-tour-highlight={tourHeaderHighlight ? 'true' : undefined}>
+          <Link href="/how-it-checks" className="lbl rounded-xl border px-3 py-2 hover:text-[#00E5FF]" style={{ borderColor: 'rgba(124,201,232,.3)' }} data-testid="text-checks" data-tour-target="rules-badge" data-tour-highlight={tourHeaderHighlight ? 'true' : undefined} title="How Greenlight checks">
             Checks: rules, no AI
-          </span>
+          </Link>
           {!runId && <Link href="/start" className="btn !px-3 !py-2" data-testid="link-saved-projects">Saved projects</Link>}
           <Show when="signed-in">
             <UserButton />

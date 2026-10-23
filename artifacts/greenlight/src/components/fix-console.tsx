@@ -107,7 +107,7 @@ function StandardChips({ items }: { items: { standard: string; id: string; block
   );
 }
 
-export function FixConsole({ source, project, wave, onExit }: { source: ConsoleSource; project: string; wave: number; onExit?: () => void }) {
+export function FixConsole({ source, project, wave, onExit, exitLabel }: { source: ConsoleSource; project: string; wave: number; onExit?: () => void; exitLabel?: string }) {
   const replay = source.kind === 'replay' ? source.recording : null;
   const live = useLiveEvents(source.kind === 'live' ? source.fixId : '');
   const events = replay ? replay.events : live.events;
@@ -312,7 +312,7 @@ export function FixConsole({ source, project, wave, onExit }: { source: ConsoleS
             })}
           </div>
           <div className="lbl mt-2 !normal-case !tracking-normal">{replay.outcome.verdictBefore} → <b style={{ color: '#4FD99A' }}>{replay.outcome.verdictAfter}</b> · {view.done.filesChanged} files changed · {fmtClock(total)} · checked by rules, fixed by Claude, re-checked by rules</div>
-          <div className="mt-3 flex gap-2"><button className="btn text-xs" onClick={() => { clock.seek(0); clock.setPlaying(true); }}>Replay</button>{onExit && <button className="btn btn-primary text-xs" onClick={onExit}>Review the changes</button>}</div>
+          <div className="mt-3 flex gap-2"><button className="btn text-xs" onClick={() => { clock.seek(0); clock.setPlaying(true); }}>Replay</button>{onExit && <button className="btn btn-primary text-xs" onClick={onExit} data-testid="button-outcome-exit">{exitLabel ?? 'Review the changes'}</button>}</div>
         </div>
       )}
     </div>

@@ -170,7 +170,10 @@ async function main() {
     version: 1, recordedAt: new Date().toISOString(), project, wave: waveNumber,
     model: process.env.GREENLIGHT_FIX_MODEL || "claude-sonnet-4-6",
     durationMs: events[events.length - 1].at, packages: packages.map(planPackage), events, changes,
-    outcome: { before: b, after: a, verdictBefore: before.result.verdict, verdictAfter: afterRun.result.verdict },
+    outcome: {
+      before: b, after: a, verdictBefore: before.result.verdict, verdictAfter: afterRun.result.verdict,
+      changed: Object.fromEntries(afterRun.result.findings.filter((f: any) => before.result.findings.find((g: any) => g.key === f.key)?.status !== f.status).map((f: any) => [f.key, f.status])),
+    },
   };
   await fs.mkdir(path.dirname(out), { recursive: true });
   await fs.writeFile(out, JSON.stringify(recording));

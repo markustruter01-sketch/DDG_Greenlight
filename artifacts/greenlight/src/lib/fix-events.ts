@@ -37,7 +37,7 @@ export interface FixRecording {
   packages: PlanPackage[];
   events: FixEvent[];
   changes: { file: string; before: string; after: string }[];
-  outcome: { before: Record<string, number>; after: Record<string, number>; verdictBefore: string; verdictAfter: string };
+  outcome: { before: Record<string, number>; after: Record<string, number>; verdictBefore: string; verdictAfter: string; /** Finding key → status after the fix, for every item whose rating changed. */ changed?: Record<string, string> };
 }
 
 export type PackageState = 'queued' | 'active' | 'done';

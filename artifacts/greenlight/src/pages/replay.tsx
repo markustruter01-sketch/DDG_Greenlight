@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useListProjects } from '@workspace/api-client-react';
 import { Link, useLocation, useParams } from 'wouter';
 import { Shell } from '@/components/shell';
 import { FixConsole } from '@/components/fix-console';
@@ -30,11 +31,16 @@ export default function Replay() {
   const { name = '' } = useParams<{ name: string }>();
   const [, navigate] = useLocation();
   const { rec, state } = useRecording(name || null);
+  // The demo assessment this recording was made from: the project whose name matches, else the first.
+  const projects = useListProjects();
+  const slug = (rec?.project ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const demo = (projects.data ?? []).find((p) => p.name.toLowerCase().includes(slug.split('-')[0] || '§')) ?? projects.data?.[0];
+  const orbitHref = demo?.latestRunId ? `/results/${demo.latestRunId}?after=${encodeURIComponent(name)}` : null;
   return (
     <Shell runMeta={rec ? `${rec.project} · recorded fix` : undefined}>
       {state === 'loading' || state === 'idle' ? <div className="flex flex-1 items-center p-8"><Skeleton className="h-full w-full" /></div>
         : state === 'missing' || !rec ? <div className="flex flex-1 flex-col items-center justify-center gap-3"><ErrorBlock message="No recording with that name." /><Link href="/start" className="btn text-xs">Back to start</Link></div>
-          : <FixConsole source={{ kind: 'replay', recording: rec }} project={rec.project} wave={rec.wave} onExit={() => navigate('/start')} />}
+          : <FixConsole source={{ kind: 'replay', recording: rec }} project={rec.project} wave={rec.wave} onExit={() => navigate(orbitHref ?? '/start')} exitLabel={orbitHref ? 'See it on the orbit' : undefined} />}
     </Shell>
   );
 }

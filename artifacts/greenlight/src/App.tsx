@@ -12,6 +12,7 @@ import Start from '@/pages/start';
 import Results from '@/pages/results';
 import Fix from '@/pages/fix';
 import Replay from '@/pages/replay';
+import How from '@/pages/how';
 import { SiteLoader } from '@/components/site-loader';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 
@@ -114,6 +115,7 @@ function Providers() {
               <Route path="/results/:id" component={Results} />
               <Route path="/fix/:id" component={Fix} />
               <Route path="/replay/:name" component={Replay} />
+              <Route path="/how-it-checks" component={How} />
               <Route component={NotFound} />
             </Switch>
           </RoutedErrorBoundary>

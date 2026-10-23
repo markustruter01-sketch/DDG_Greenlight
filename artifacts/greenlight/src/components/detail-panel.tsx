@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
+import { Link } from 'wouter';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, Download, X } from 'lucide-react';
+import { ChevronDown, Download, ScanSearch, X } from 'lucide-react';
 import {
   getListReportsQueryKey,
   useListReports,
@@ -17,6 +18,18 @@ import { ANNUNCIATORS, STATUS_COLOR, download, findingsFor, pc, reportUrl } from
 export type Target = { kind: 'theme'; id: string } | { kind: 'standard'; id: string } | { kind: 'finding'; key: string } | null;
 
 const ORDER: Record<string, number> = { N: 0, P: 1, UN: 2, L: 3, C: 4, NA: 5 };
+
+/** The written checks, by id (from the config), so a finding can name the rule that fired. */
+type Rules = Record<string, { title: string; theme: string; fix: string }>;
+const RulesContext = createContext<Rules>({});
+const rulesOf = (config?: GreenlightConfig): Rules => ((config as GreenlightConfig & { rules?: Rules } | undefined)?.rules ?? {});
+
+/** Rule ids named in a finding: from its evidence, else parsed from the "why" line ("sec.authn: ..."). */
+function ruleIdsOf(f: Finding): string[] {
+  const ids = new Set<string>(f.evidence.map((e) => e.ruleId).filter((x): x is string => !!x));
+  for (const m of f.why.matchAll(/(?:^|\s)([a-z]+\.[a-z_]+):/g)) ids.add(m[1]);
+  return [...ids];
+}
 const CLASSES = ['Non-classified', 'OFFICIAL: Sensitive', 'PROTECTED', 'SECRET', 'TOP SECRET'];
 
 function FindingRow({ f, status, projected, defaultOpen, onSelect }: { f: Finding; status: string; projected: boolean; defaultOpen?: boolean; onSelect?: (key: string) => void }) {
@@ -50,6 +63,7 @@ function FindingRow({ f, status, projected, defaultOpen, onSelect }: { f: Findin
               <div className="lbl mt-2 !text-[#00E5FF]">Projected after this wave: {status}</div>
             )}
           </section>
+          <RuleBlock f={f} />
           <section>
             <div className="lbl mb-1">Why</div>
             <p style={{ color: '#CFE3EE' }}>{f.why}</p>
@@ -81,6 +95,36 @@ function FindingRow({ f, status, projected, defaultOpen, onSelect }: { f: Findin
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * What produced this rating, in one block: the catalogue clause, the written
+ * rule(s) that fired, and where in the code. Nothing here came from a model.
+ */
+function RuleBlock({ f }: { f: Finding }) {
+  const rules = useContext(RulesContext);
+  const ids = ruleIdsOf(f);
+  return (
+    <section className="rule-block" data-testid={`rule-block-${f.key}`}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="lbl">Checked by</div>
+        <span className="rule-badge"><ScanSearch size={11} /> Rules, not AI</span>
+      </div>
+      <div className="rule-grid">
+        <span className="lbl !text-[9px]">Clause</span>
+        <span className="font-mono text-xs">{f.standardShort} {f.id}</span>
+        <span className="lbl !text-[9px]">Rule{ids.length === 1 ? '' : 's'}</span>
+        <span className="min-w-0">
+          {ids.length ? ids.map((id) => (
+            <span key={id} className="block text-xs"><span className="font-mono" style={{ color: '#00E5FF' }}>{id}</span>{rules[id] ? <span style={{ color: '#CFE3EE' }}> · {rules[id].title}</span> : null}</span>
+          )) : <span className="text-xs" style={{ color: '#CFE3EE' }}>{f.factIds?.length ? `Answered at intake (${f.factIds.join(', ')})` : 'Reviewer judgement; no code rule applies'}</span>}
+        </span>
+        <span className="lbl !text-[9px]">Where</span>
+        <span className="text-xs" style={{ color: '#CFE3EE' }}>{f.evidence.length ? `${f.evidence.length} location${f.evidence.length === 1 ? '' : 's'} in the code, listed below` : 'Absence of a signal across the whole repository'}</span>
+      </div>
+      <Link href="/how-it-checks" className="lbl mt-2 inline-block !text-[9px] !text-[#00E5FF] hover:underline">How Greenlight checks →</Link>
+    </section>
   );
 }
 
@@ -252,7 +296,11 @@ function Answers({ run, config, onRun }: { run: AssessmentRun; config?: Greenlig
   );
 }
 
-export function DetailPanel({ run, config, target, st, projected, onClose, onRun, onSelectFinding }: { run: AssessmentRun; config?: GreenlightConfig; target: Target; st: Record<string, string>; projected: boolean; onClose: () => void; onRun: (id: string) => void; onSelectFinding?: (key: string) => void }) {
+export function DetailPanel(props: { run: AssessmentRun; config?: GreenlightConfig; target: Target; st: Record<string, string>; projected: boolean; onClose: () => void; onRun: (id: string) => void; onSelectFinding?: (key: string) => void }) {
+  return <RulesContext.Provider value={rulesOf(props.config)}><DetailPanelInner {...props} /></RulesContext.Provider>;
+}
+
+function DetailPanelInner({ run, config, target, st, projected, onClose, onRun, onSelectFinding }: { run: AssessmentRun; config?: GreenlightConfig; target: Target; st: Record<string, string>; projected: boolean; onClose: () => void; onRun: (id: string) => void; onSelectFinding?: (key: string) => void }) {
   let title = '';
   let body: ReactNode = null;
   if (target?.kind === 'theme') {

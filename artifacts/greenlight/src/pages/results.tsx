@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useParams } from 'wouter';
+import { Link, useLocation, useParams, useSearch } from 'wouter';
 import { ArrowRight, ChevronLeft, ChevronRight, GitCompare, Pause, Play, SlidersHorizontal, Volume2, VolumeX } from 'lucide-react';
 import {
   getGetAssessmentQueryKey,
@@ -17,6 +17,7 @@ import { TourPointer, type PointerTarget } from '@/components/tour-pointer';
 import { TourProgress } from '@/components/tour-progress';
 import { createNarrator } from '@/lib/narrator';
 import { useCaptionSlot } from '@/lib/caption-slot';
+import { useRecording } from '@/pages/replay';
 import { ANNUNCIATORS, findingsFor, pc, statusMap, tally, tone, waveOf } from '@/lib/greenlight';
 
 const RING_COLORS = ['#7CC9E8', '#00E5FF', '#CFE3EE'];
@@ -59,6 +60,12 @@ const countFiles = (inventory: unknown) => {
 export default function Results() {
   const { id = '' } = useParams<{ id: string }>();
   const [, nav] = useLocation();
+  // ?after=<recording>: show the orbit as the recorded fix left it, lights turning green a moment after load.
+  const search = useSearch();
+  const afterName = useMemo(() => new URLSearchParams(search).get('after'), [search]);
+  const afterRec = useRecording(afterName);
+  const [afterOn, setAfterOn] = useState(true);
+  const [afterApplied, setAfterApplied] = useState(false);
   const q = useGetAssessment(id, { query: { enabled: !!id, queryKey: getGetAssessmentQueryKey(id) } });
   const cfg = useGetGreenlightConfig();
   const upd = useUpdateAssessment();
@@ -193,7 +200,14 @@ export default function Results() {
     }
   };
 
-  const st = useMemo(() => (run ? statusMap(run, wave) : {}), [run, wave]);
+  const baseSt = useMemo(() => (run ? statusMap(run, wave) : {}), [run, wave]);
+  const st = useMemo(() => (afterOn && afterApplied && afterRec.rec?.outcome.changed ? { ...baseSt, ...afterRec.rec.outcome.changed } : baseSt), [baseSt, afterOn, afterApplied, afterRec.rec]);
+  useEffect(() => {
+    if (!afterRec.rec || !orbitReady) return;
+    const t = window.setTimeout(() => setAfterApplied(true), 1400);
+    return () => window.clearTimeout(t);
+  }, [afterRec.rec, orbitReady]);
+  const afterReadiness = afterOn && afterApplied ? afterRec.rec?.outcome.after : undefined;
   const counts = useMemo(() => (run ? tally(run, st) : null), [run, st]);
   const w = run ? waveOf(run, wave) : undefined;
   const projected = wave > 0;
@@ -469,11 +483,21 @@ export default function Results() {
             </div>
           </section>
 
+          {afterRec.rec && (
+            <div className="after-banner glass" data-testid="after-banner">
+              <span className="lbl !text-[#4FD99A]">After the recorded fix · re-checked by the same rules</span>
+              <span className="text-sm">{Object.entries(afterRec.rec.outcome.after).map(([k, v]) => `${k} ${afterRec.rec!.outcome.before[k]}% → ${v}%`).join(' · ')} · {Object.keys(afterRec.rec.outcome.changed ?? {}).length} clause{Object.keys(afterRec.rec.outcome.changed ?? {}).length === 1 ? '' : 's'} changed</span>
+              <span className="flex-1" />
+              <button className={`btn !px-3 !py-1.5 text-xs ${afterOn ? '' : 'fc-on'}`} onClick={() => setAfterOn(false)} data-testid="button-show-before">Before</button>
+              <button className={`btn !px-3 !py-1.5 text-xs ${afterOn ? 'fc-on' : ''}`} onClick={() => { setAfterOn(true); setAfterApplied(true); }} data-testid="button-show-after">After</button>
+              <Link href={`/replay/${afterName}`} className="btn !px-3 !py-1.5 text-xs">Replay</Link>
+            </div>
+          )}
           <div className="result-workspace relative">
             <aside className={`glass readiness-column ${readinessHighlight ? 'is-tour-highlight' : ''}`} data-testid="readiness-rings">
               <div className="lbl flex-none">{projected ? `Readiness · wave ${wave}` : 'Readiness'}</div>
               {run.standards.map((s, i) => {
-                const value = pc(w ? w.readiness[s.id] ?? s.readiness : s.readiness);
+                const value = afterReadiness?.[s.short] ?? pc(w ? w.readiness[s.id] ?? s.readiness : s.readiness);
                 return <button key={s.id} onClick={() => setTarget({ kind: 'standard', id: s.id })} className="tile flex shrink-0 items-center gap-2 p-2 text-left" data-testid={`button-standard-${s.id}`}>
                   <Gauge value={value} size={42} color={RING_COLORS[i % RING_COLORS.length]} label={`${value}`} />
                   <span className="min-w-0"><span className="block truncate font-head text-xs font-medium">{s.short}</span><span className="lbl !text-[9px]">{s.blocking ? `${s.blocking} must-fix` : s.verdict}</span></span>

@@ -45,7 +45,7 @@ export interface FixRecording {
   /** Final file list with before/after, so the review step works offline. */
   changes: { file: string; before: string; after: string }[];
   /** Readiness before and after, per standard, from the deterministic engine. */
-  outcome: { before: Record<string, number>; after: Record<string, number>; verdictBefore: string; verdictAfter: string };
+  outcome: { before: Record<string, number>; after: Record<string, number>; verdictBefore: string; verdictAfter: string; changed?: Record<string, string> };
 }
 
 /** A FixEvent without its timestamp; distributive so each variant keeps its own fields. */

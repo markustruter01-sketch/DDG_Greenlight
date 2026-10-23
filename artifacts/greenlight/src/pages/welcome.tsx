@@ -54,7 +54,7 @@ export default function Welcome() {
         <div className="welcome-proof">
           <section className="glass welcome-card" data-testid="panel-checking">
             <div className="lbl !text-[#4FD99A]">CHECKING · NO AI</div>
-            <p className="mt-2 text-sm leading-relaxed" style={{ color: '#CFE3EE' }}>Every check is a written rule in code. The same code always gives the same result, and every finding shows its evidence.</p>
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: '#CFE3EE' }}>Every check is a written rule in code. The same code always gives the same result, and every finding shows its evidence. <Link href="/how-it-checks" className="underline" style={{ color: '#00E5FF' }} data-testid="link-how-it-checks">How it checks</Link></p>
           </section>
           <section className="glass welcome-card" data-testid="panel-fixing">
             <div className="lbl !text-[#00E5FF]">FIXING · AI, ONLY HERE</div>
