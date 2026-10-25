@@ -19,7 +19,7 @@ export default function How() {
         <header className="how-head">
           <div className="lbl !text-[#4FD99A]">Checking · code, not AI</div>
           <h1 className="font-head how-title">How Greenlight checks</h1>
-          <p className="how-lede">Every rating comes from written rules run over the code. The same repository gives the same findings, the same scores and the same report, every time. No model is called anywhere in checking.</p>
+          <p className="how-lede">Every rating comes from code: written rules, run programmatically over the repository. The same repository gives the same findings, the same scores and the same report, every time. No model is called anywhere in checking; the whole assessment runs without AI.</p>
         </header>
 
         <ol className="how-steps">
@@ -54,7 +54,7 @@ export default function How() {
             <Sparkles size={18} style={{ color: '#00E5FF' }} />
             <div className="lbl !text-[#00E5FF]">Fixing · the only step that uses AI</div>
           </div>
-          <p>When you choose <b>Fix it with Claude</b>, Claude edits an isolated copy of the code against the work packages the rules produced. You see every file it reads and every change it makes, you approve each change, and nothing is merged for you. Then the same rules run again, so the "after" number is measured, not claimed.</p>
+          <p>Fixing is the only place AI is used. When you choose <b>Fix it with Claude</b>, Claude edits an isolated copy of the code against the work packages the rules produced. You see every file it reads and every change it makes, you approve each change, and nothing is merged for you. Then the same rules run again, so the "after" number is measured by code, not claimed by a model. If a clause is still red after Claude's first pass, the rules say so and Claude is sent back to exactly that place, up to three times.</p>
           <div className="flex flex-wrap gap-2">
             <Link href={`/replay/${DEMO_RECORDING}`} className="btn btn-primary !px-4 !py-2 text-xs" data-testid="link-how-replay">Watch a recorded fix <ArrowRight size={14} /></Link>
             <Link href="/start" className="btn !px-4 !py-2 text-xs">Start an assessment</Link>
