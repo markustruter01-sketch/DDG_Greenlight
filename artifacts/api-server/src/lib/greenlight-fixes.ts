@@ -61,6 +61,9 @@ async function propose(id: string, run: any, held: any) {
     session.emit({ type: "stage", stage: "fixing", label: `Fixing wave ${held.wave}: ${packages.length} work package${packages.length === 1 ? "" : "s"}` });
     session.emit({ type: "plan", packages: packages.map(planPackage) });
     await runFixAgent({ root, wave: held.wave, packages, session, snapshots });
+    // TODO: run lib/fix-recheck.ts recheckAndRetarget here as the recorder does: re-assess the working
+    // copy (buildSnapshot over `entries` with the approved edits, the run's standards/levels/facts/
+    // classification/maturity) and hand Claude the clauses still open, before the review step.
     const after = await readWorkspace(root);
     const names = new Set([...original.keys(), ...after.keys()]);
     result.changes = [...names].filter(file => original.get(file) !== after.get(file)).map(file => ({ file, before: original.get(file) || "", after: after.get(file) || "", approved: false }));
