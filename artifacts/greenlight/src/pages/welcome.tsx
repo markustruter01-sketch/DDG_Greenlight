@@ -1,20 +1,20 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
-import { ArrowDownToLine, Braces, Check, ClipboardCheck, FileSearch, ListChecks, Play, ShieldCheck } from 'lucide-react';
+import { ArrowDownToLine, Braces, FileSearch, ListChecks, PenLine, Play, ShieldCheck, Wrench } from 'lucide-react';
 import { Shell, Logo } from '@/components/shell';
 import { Modal } from '@/components/gl';
 
-/** The 45-second explainer (public/explainer.mp4), rendered from the DDG motion kit. */
+/** The 90-second explainer (public/explainer.mp4), rendered from the DDG motion kit. */
 const EXPLAINER = `${import.meta.env.BASE_URL}explainer.mp4`;
 const EXPLAINER_POSTER = `${import.meta.env.BASE_URL}explainer-poster.jpg`;
 
 const STEPS = [
-  ['Plug in the code', Braces],
-  ['Pick the standards', ListChecks],
-  ['See every gap', FileSearch],
-  ['Get the fix plan', ClipboardCheck],
-  ['Fix it', Check],
-  ["Prove it's fixed", ShieldCheck],
+  ['Start', 'A GitHub link or a zip. Nothing to install.', Braces],
+  ['Results', 'Written rules read the code; every gap shows its evidence.', FileSearch],
+  ['Plan', 'Gaps grouped into waves, biggest wins first.', ListChecks],
+  ['Fixing', 'Claude writes the changes. You approve every file.', Wrench],
+  ['Verified', 'The same rules run again. Lights turn green.', ShieldCheck],
+  ['Sign-off', 'Export the fixed code and the report.', PenLine],
 ] as const;
 
 export default function Welcome() {
@@ -37,33 +37,33 @@ export default function Welcome() {
           <p className="mt-2 text-[19px]" style={{ color: '#CFE3EE' }} data-testid="text-tagline">Know if software is fit for regulation, before it ships.</p>
         </section>
         <div className="welcome-steps">
-          {STEPS.map(([title, Icon], i) => (
+          {STEPS.map(([title, sub, Icon], i) => (
             <div key={title} className="glass welcome-step" data-testid={`tile-step-${i + 1}`}>
               <div className="flex items-center justify-between">
-                <span className="lbl !text-[#7CC9E8]">0{i + 1}</span>
-                {(i === 2 || i === 3 || i === 5) && <span className="lbl !text-[9px]">NO AI</span>}
-                {i === 4 && <span className="lbl !text-[9px] !text-[#00E5FF]">AI</span>}
+                <span className="lbl">Step {i + 1}</span>
+                {i === 3 ? <span className="lbl !text-[9px] !text-[#00E5FF]">AI</span> : <span className="lbl !text-[9px]">Code, not AI</span>}
               </div>
               <div className="flex items-center gap-2">
-                <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border" style={{ borderColor: 'rgba(124,201,232,.3)', background: 'rgba(124,201,232,.08)' }}><Icon size={23} /></span>
-                <span className="min-w-0 font-head text-sm font-medium leading-tight">{title}</span>
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border" style={{ borderColor: 'rgba(255,255,255,.4)', background: 'rgba(6,19,26,.5)' }}><Icon size={19} /></span>
+                <span className="min-w-0 font-head text-base font-semibold leading-tight">{title}</span>
               </div>
+              <p className="ink !p-2 text-[11px] leading-snug">{sub}</p>
             </div>
           ))}
         </div>
         <div className="welcome-proof">
           <section className="glass welcome-card" data-testid="panel-checking">
-            <div className="lbl !text-[#4FD99A]">CHECKING · NO AI</div>
-            <p className="mt-2 text-sm leading-relaxed" style={{ color: '#CFE3EE' }}>Every check is a written rule in code. The same code always gives the same result, and every finding shows its evidence. <Link href="/how-it-checks" className="underline" style={{ color: '#00E5FF' }} data-testid="link-how-it-checks">How it checks</Link></p>
+            <div className="lbl !text-[#4FD99A]">CHECKING · CODE, NOT AI</div>
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: '#CFE3EE' }}>Every check is a written rule in code: programmatic, repeatable, auditable. No model reads your code or decides a result; the whole assessment runs without AI, and every finding shows the rule, the file and the line. <Link href="/how-it-checks" className="underline" style={{ color: '#00E5FF' }} data-testid="link-how-it-checks">How it checks</Link></p>
           </section>
           <section className="glass welcome-card" data-testid="panel-fixing">
-            <div className="lbl !text-[#00E5FF]">FIXING · AI, ONLY HERE</div>
+            <div className="lbl !text-[#00E5FF]">FIXING · THE ONLY PLACE AI IS USED</div>
             <p className="mt-2 text-sm leading-relaxed" style={{ color: '#CFE3EE' }}>Claude, by Anthropic, applies the fixes. You approve every change, then the same rules check it again.</p>
           </section>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2">
           <Link href="/start" className="btn btn-primary !px-5 !py-2.5" data-testid="link-start-assessment">Start an assessment <ArrowDownToLine size={15} /></Link>
-          <button className="btn !px-5 !py-2.5" onClick={() => setWatch(true)} data-testid="button-watch-how"><Play size={15} /> Watch how it works · 45 s</button>
+          <button className="btn !px-5 !py-2.5" onClick={() => setWatch(true)} data-testid="button-watch-how"><Play size={15} /> Watch how it works · 1:30</button>
         </div>
         <div className="mx-auto rounded-full border px-3 py-1 lbl !text-[9px]" style={{ borderColor: 'rgba(124,201,232,.25)' }}>DEVELOPED BY DIGITAL DYNAMICS</div>
       </div>
@@ -73,7 +73,7 @@ export default function Welcome() {
             Your browser cannot play this video.
           </video>
         )}
-        <p className="lbl mt-3 !normal-case !tracking-normal">Checked by rules. Fixed by Claude. Re-checked by rules.</p>
+        <p className="lbl mt-3 !normal-case !tracking-normal">Checked by code. Fixed by Claude. Re-checked by code.</p>
       </Modal>
     </Shell>
   );

@@ -11,6 +11,9 @@ import Welcome from '@/pages/welcome';
 import Start from '@/pages/start';
 import Results from '@/pages/results';
 import Fix from '@/pages/fix';
+import Plan from '@/pages/plan';
+import Verified from '@/pages/verified';
+import Signoff from '@/pages/signoff';
 import Replay from '@/pages/replay';
 import How from '@/pages/how';
 import { SiteLoader } from '@/components/site-loader';
@@ -113,7 +116,10 @@ function Providers() {
               <Route path="/sign-in/*?">{() => <Start auth="in" />}</Route>
               <Route path="/sign-up/*?">{() => <Start auth="up" />}</Route>
               <Route path="/results/:id" component={Results} />
+              <Route path="/plan/:id" component={Plan} />
               <Route path="/fix/:id" component={Fix} />
+              <Route path="/verified/:id" component={Verified} />
+              <Route path="/signoff/:id" component={Signoff} />
               <Route path="/replay/:name" component={Replay} />
               <Route path="/how-it-checks" component={How} />
               <Route component={NotFound} />

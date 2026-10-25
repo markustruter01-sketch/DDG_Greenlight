@@ -372,8 +372,8 @@ export default function Results() {
       // 8 · Fix it with Claude
       [
         { at: 0, run: () => { controls.emphasis('core'); void controls.home(); dom('rules-badge', 'Checked by code, not AI'); } },
-        { at: 7, run: () => dom('fix-button', 'Fix it with Claude') },
-        { at: 13, run: () => dom('nav-replay', 'Watch a recorded fix') },
+        { at: 7, run: () => dom('fix-button', 'Get the fix plan') },
+        { at: 13, run: () => dom('nav-plan', 'Step 3 · the plan') },
       ],
     ];
     return [reset, ...(steps[index] ?? [])];
@@ -445,7 +445,16 @@ export default function Results() {
   }, [tourStatus, tourIndex]);
 
   return (
-    <Shell runId={id} tourHeaderHighlight={tourIndex === 8 && !['closed', 'prompt'].includes(tourStatus)} runMeta={run ? `${run.projectName} · ${new Date(run.assessedAt).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' })}${fileCount == null ? '' : ` · ${fileCount} files`}` : undefined}>
+    <Shell runId={id} tourHeaderHighlight={tourIndex === 8 && !['closed', 'prompt'].includes(tourStatus)}
+      guide={run && !afterName ? {
+        steps: tourActiveNow
+          ? ['Watch the guided tour; press Exit on the caption to take over', 'Click a raised red pin to see why that requirement failed', 'Press Get the fix plan']
+          : ['Click a raised red pin to see why that requirement failed', 'Read the evidence: the rule that fired, the file and the line', 'Press Get the fix plan'],
+        current: tourActiveNow ? 0 : picked ? 1 : 0,
+        aside: !tourActiveNow && tourStatus !== 'playing' ? <button className="lbl hover:text-[#00E5FF]" onClick={startTour} data-testid="button-guide-tour">Play the guided tour</button> : undefined,
+      } : undefined}
+      headerActions={<Link href={`/plan/${id}`} className="btn btn-primary hidden sm:inline-flex" data-testid="link-header-plan" data-tour-target="fix-button" data-tour-highlight={tourIndex === 8 && !['closed', 'prompt'].includes(tourStatus) ? 'true' : undefined}>Get the fix plan <ArrowRight size={15} /></Link>}
+      runMeta={run ? `${run.projectName} · ${new Date(run.assessedAt).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' })}${fileCount == null ? '' : ` · ${fileCount} files`}` : undefined}>
       {q.isLoading || !run || !counts ? (
         q.isError ? <div className="flex flex-1 items-center justify-center"><ErrorBlock message="This assessment could not be loaded." onRetry={() => q.refetch()} /></div> :
           <div className="grid flex-1 gap-4 px-4 py-4 lg:grid-cols-[214px_1fr]"><Skeleton className="h-24 lg:col-span-2" /><Skeleton className="h-full" /><Skeleton className="h-full" /></div>

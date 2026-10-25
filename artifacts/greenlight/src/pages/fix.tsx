@@ -1,25 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'wouter';
+import { Link, useLocation, useParams, useSearch } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
-import { Download, FileText, GitPullRequest, Package, FileCheck2, MonitorPlay } from 'lucide-react';
+import { Download, GitPullRequest, Package, MonitorPlay, ListChecks } from 'lucide-react';
 import {
   getGetAssessmentQueryKey,
   getListFixRunsQueryKey,
-  getListReportsQueryKey,
   useApproveFix,
   useGetAssessment,
-  useGetGreenlightConfig,
   useListFixRuns,
-  useListReports,
-  useStartFix,
   type FixRun,
   type AssessmentRun,
 } from '@workspace/api-client-react';
 import { Shell, DEMO_RECORDING } from '@/components/shell';
 import { Dot, ErrorBlock, Skeleton } from '@/components/gl';
-import { useGate } from '@/hooks/use-gate';
-import { download, lineDiff, pc, reportUrl, tally } from '@/lib/greenlight';
-import { OrbitView } from '@/components/orbit-view';
+import { download, lineDiff, pc } from '@/lib/greenlight';
 import { FixConsole } from '@/components/fix-console';
 import type { FixEvent, FixRecording } from '@/lib/fix-events';
 
@@ -27,7 +21,7 @@ import type { FixEvent, FixRecording } from '@/lib/fix-events';
 const eventsOf = (fr: FixRun): FixEvent[] => ((fr as FixRun & { events?: FixEvent[] }).events ?? []);
 const readinessBy = (run: AssessmentRun) => Object.fromEntries(run.standards.map((s) => [s.short, s.readiness]));
 /** Turns a finished run plus its before/after assessments into a replayable recording. */
-function recordingOf(fr: FixRun, before: AssessmentRun, after?: AssessmentRun): FixRecording {
+export function recordingOf(fr: FixRun, before: AssessmentRun, after?: AssessmentRun): FixRecording {
   const events = eventsOf(fr);
   const plan = events.find((e) => e.type === 'plan');
   return {
@@ -38,9 +32,8 @@ function recordingOf(fr: FixRun, before: AssessmentRun, after?: AssessmentRun): 
   };
 }
 
-const DISABLED_MSG = 'Live fixing is off on this deployment';
-const WORKING = /run|pend|queue|start|prepar|generat|verif|appl|work|propos/i;
-const AWAITING = /await|review|ready|propos/i;
+export const WORKING = /run|pend|queue|start|prepar|generat|verif|appl|work|propos/i;
+export const AWAITING = /await|review|ready|propos/i;
 
 function Diff({ before, after }: { before: string; after: string }) {
   const rows = useMemo(() => lineDiff(before, after), [before, after]);
@@ -124,16 +117,11 @@ function FixRunCard({ fr, runId, baseline, onReplay }: { fr: FixRun; runId: stri
 
 export default function Fix() {
   const { id = '' } = useParams<{ id: string }>();
+  const [, nav] = useLocation();
+  const search = useSearch();
+  const wanted = useMemo(() => new URLSearchParams(search).get('fix'), [search]);
   const qc = useQueryClient();
-  const { signedIn, run: gated } = useGate();
-  const cfg = useGetGreenlightConfig();
   const q = useGetAssessment(id, { query: { enabled: !!id, queryKey: getGetAssessmentQueryKey(id) } });
-  const [wave, setWave] = useState(0);
-  const [picked, setPicked] = useState<string | null>(null);
-  // The live fix screen takes over while a run is in flight (or when replaying a finished one).
-  const [screen, setScreen] = useState<{ kind: 'live'; fixId: string } | { kind: 'replay'; recording: FixRecording } | null>(null);
-  const [dismissed, setDismissed] = useState<string | null>(null);
-  const start = useStartFix();
   const fixes = useListFixRuns(id, {
     query: {
       enabled: !!id,
@@ -141,115 +129,61 @@ export default function Fix() {
       refetchInterval: (query) => (query.state.data?.some((f) => WORKING.test(f.status) && !AWAITING.test(f.status) && !f.error) ? 2500 : false),
     },
   });
+  // The console takes over while a run is in flight, or when a finished one is replayed.
+  const [screen, setScreen] = useState<{ kind: 'live'; fixId: string } | { kind: 'replay'; recording: FixRecording } | null>(null);
+  const [dismissed, setDismissed] = useState<string | null>(null);
   const run = q.data;
-  const enabled = !!cfg.data?.fixingEnabled;
-  const reason = (cfg.data as { fixingDisabledReason?: string } | undefined)?.fixingDisabledReason;
-  useEffect(() => {
-    if (run && !wave) setWave(run.waves.find((w) => w.fixCount > 0)?.number ?? run.waves[0]?.number ?? 0);
-  }, [run, wave]);
-  const w = run?.waves.find((x) => x.number === wave);
-  const base = run ? tally(run, Object.fromEntries(run.findings.map((f) => [f.key, f.status]))) : null;
-  const err = start.error as { message?: string } | null;
-  const waveFixes = (fixes.data ?? []).filter((fix) => fix.wave === wave);
-  const selectedFix = waveFixes[waveFixes.length - 1];
   const inFlight = (fixes.data ?? []).find((f) => WORKING.test(f.status) && !AWAITING.test(f.status) && !f.error);
+  const requested = wanted ? (fixes.data ?? []).find((f) => f.id === wanted) : undefined;
   useEffect(() => {
-    if (inFlight && !screen && dismissed !== inFlight.id) setScreen({ kind: 'live', fixId: inFlight.id });
-  }, [inFlight?.id, screen, dismissed]);
-  const verificationId = selectedFix?.verificationRunId;
-  const after = useGetAssessment(verificationId ?? '', {
-    query: { enabled: !!verificationId, queryKey: getGetAssessmentQueryKey(verificationId ?? '') },
-  });
-  const reports = useListReports(verificationId ?? '', {
-    query: { enabled: !!verificationId, queryKey: getListReportsQueryKey(verificationId ?? '') },
-  });
-  const verificationPdf = (reports.data ?? []).find((report) => report.formats.includes('pdf'));
-  const selectedFinding = after.data?.findings.find((finding) => finding.key === picked) ?? run?.findings.find((finding) => finding.key === picked);
+    if (screen) return;
+    if (requested && dismissed !== requested.id) {
+      if (WORKING.test(requested.status) && !AWAITING.test(requested.status) && !requested.error) setScreen({ kind: 'live', fixId: requested.id });
+      else if (run && eventsOf(requested).length) setScreen({ kind: 'replay', recording: recordingOf(requested, run) });
+      return;
+    }
+    if (inFlight && dismissed !== inFlight.id) setScreen({ kind: 'live', fixId: inFlight.id });
+  }, [inFlight?.id, requested?.id, requested?.status, screen, dismissed, run?.id]);
+
+  const latest = (fixes.data ?? [])[(fixes.data ?? []).length - 1];
+  const awaiting = (fixes.data ?? []).find((f) => AWAITING.test(f.status) && !f.verificationRunId);
+  const verified = (fixes.data ?? []).filter((f) => f.verificationRunId);
+  const guide = {
+    steps: screen?.kind === 'live'
+      ? ['Nothing yet. Claude is writing the fixes; watch the plan tick off on the left.', 'When it says awaiting your approval, read the changed files', 'Approve them; the same code checks again']
+      : awaiting ? ['Read each changed file below; untick any you do not want', 'Press Approve and verify', 'Then go to Step 5 to see the result']
+        : verified.length ? ['This wave is verified', 'Go to Step 5 · Verified to see before and after', 'Or back to the Plan for the next wave']
+          : ['No fix has been started for this assessment yet', 'Go to Step 3 · Plan and press Fix with Claude', 'Come back here to watch it'],
+    current: screen?.kind === 'live' ? 0 : awaiting ? 0 : verified.length ? 1 : 1,
+    tone: verified.length && !awaiting && !screen ? 'ok' as const : undefined,
+  };
 
   return (
-    <Shell runId={id} runMeta={run ? `${run.projectName} · ${new Date(run.assessedAt).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' })}` : undefined}>
+    <Shell runId={id} guide={screen ? undefined : guide} runMeta={run ? `${run.projectName} · fixing` : undefined}>
       {q.isLoading ? <div className="flex flex-1 items-center p-8"><Skeleton className="h-full w-full" /></div> : q.isError || !run ? <div className="flex flex-1 items-center justify-center"><ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /></div> : screen ? (
-        <FixConsole key={screen.kind === 'live' ? screen.fixId : 'replay'} source={screen} project={run.projectName} wave={screen.kind === 'replay' ? screen.recording.wave : wave} onExit={() => { if (screen.kind === 'live') setDismissed(screen.fixId); setScreen(null); qc.invalidateQueries({ queryKey: getListFixRunsQueryKey(id) }); }} />
+        <FixConsole key={screen.kind === 'live' ? screen.fixId : 'replay'} source={screen} project={run.projectName} wave={screen.kind === 'replay' ? screen.recording.wave : (requested?.wave ?? inFlight?.wave ?? latest?.wave ?? 1)}
+          exitLabel={screen.kind === 'live' ? 'Review the changes' : 'Back'}
+          onExit={() => { if (screen.kind === 'live') setDismissed(screen.fixId); setScreen(null); qc.invalidateQueries({ queryKey: getListFixRunsQueryKey(id) }); }} />
       ) : (
-        <div className="fix-layout">
-          <section className="glass fix-status">
-            <div className="min-w-0">
-              <div className="lbl">FIX AND VERIFY · {run.projectName}</div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="font-head text-lg font-semibold">{verificationId && after.data ? 'Verification complete' : selectedFix?.status ?? 'Plan ready'}</span>
-                <span className="lbl !normal-case !tracking-normal">{verificationId && after.data ? `${pc(after.data.readiness)}% measured · ${after.data.verdict}` : 'No fresh verification run yet'}</span>
+        <div className="plan-layout" style={{ gridTemplateColumns: 'minmax(0,1fr)' }}>
+          <section className="glass plan-main">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div><div className="lbl">Step 4 of 6 · Fixing</div><h1 className="font-head mt-1 text-3xl font-semibold leading-tight">{awaiting ? `Wave ${awaiting.wave} is proposed. Approve the changes.` : verified.length ? `Wave ${verified[verified.length - 1].wave} is fixed and verified.` : 'Nothing is being fixed yet.'}</h1></div>
+              <div className="flex gap-2">
+                <Link href={`/plan/${id}`} className="btn !px-3 !py-2 text-xs" data-testid="link-plan"><ListChecks size={14} /> The plan</Link>
+                {inFlight && <button className="btn btn-primary !px-3 !py-2 text-xs" onClick={() => { setDismissed(null); setScreen({ kind: 'live', fixId: inFlight.id }); }} data-testid="button-open-console"><MonitorPlay size={14} /> Watch the fix</button>}
+                {verified.length > 0 && <Link href={`/verified/${id}?fix=${verified[verified.length - 1].id}`} className="btn btn-primary !px-3 !py-2 text-xs" data-testid="link-verified">See before → after</Link>}
               </div>
             </div>
-            <div className="flex flex-wrap justify-end gap-1.5">
-              <a className={`btn !px-2.5 !py-2 text-xs ${selectedFix?.pullRequestUrl ? '' : 'pointer-events-none opacity-40'}`} href={selectedFix?.pullRequestUrl} target="_blank" rel="noreferrer" aria-disabled={!selectedFix?.pullRequestUrl} data-testid="button-review-pr"><GitPullRequest size={14} /> Review pull request</a>
-              <button className="btn !px-2.5 !py-2 text-xs" disabled={!selectedFix?.downloadUrl} onClick={() => selectedFix?.downloadUrl && download(selectedFix.downloadUrl)} data-testid="button-fixed-code"><Package size={14} /> Fixed code (.zip)</button>
-              <button className="btn !px-2.5 !py-2 text-xs" disabled={!verificationPdf} onClick={() => verificationPdf && download(reportUrl(verificationPdf.url, 'pdf'))} data-testid="button-verification-report"><FileCheck2 size={14} /> Verification report (PDF)</button>
+            <div className="plan-list">
+              {fixes.isLoading ? <Skeleton className="h-24" /> : fixes.isError ? <ErrorBlock message="Fix runs unavailable." onRetry={() => fixes.refetch()} /> : !(fixes.data ?? []).length ? (
+                <div className="ink p-5 text-sm" style={{ color: '#EAF3F8' }}>
+                  <p className="font-head text-lg text-[#F7FBFF]">Start from the plan</p>
+                  <p className="mt-1">Step 3 lists what each wave fixes. Press <b>Fix wave 1 with Claude</b> there and this screen shows the work live. Where live fixing is off, <Link href={`/replay/${DEMO_RECORDING}`} className="underline" style={{ color: '#00E5FF' }}>the recorded fix</Link> shows a real run end to end.</p>
+                </div>
+              ) : [...(fixes.data ?? [])].reverse().map((fr) => <FixRunCard key={fr.id} fr={fr} runId={id} baseline={run} onReplay={(recording) => setScreen({ kind: 'replay', recording })} />)}
             </div>
           </section>
-
-          <div className="fix-controls">
-            {run.waves.map((item) => <button key={item.number} onClick={() => { setWave(item.number); setPicked(null); }} className="lbl rounded-full border px-3 py-1.5 !text-[10px]" style={{ borderColor: wave === item.number ? '#00E5FF' : 'rgba(124,201,232,.3)', background: wave === item.number ? 'rgba(0,229,255,.13)' : 'rgba(11,31,42,.46)' }} data-testid={`button-wave-${item.number}`}>Wave {item.number} · {item.fixCount}</button>)}
-            {inFlight && <button className="btn !px-3 !py-1.5 text-xs" onClick={() => { setDismissed(null); setScreen({ kind: 'live', fixId: inFlight.id }); }} data-testid="button-open-console"><MonitorPlay size={14} /> Watch the fix</button>}
-            <Link href={`/replay/${DEMO_RECORDING}`} className="btn ml-auto !px-3 !py-1.5 text-xs" data-testid="link-recorded-fix"><MonitorPlay size={14} /> Watch the recorded fix</Link>
-            <Link href={`/results/${id}`} className="btn !px-3 !py-1.5 text-xs" data-testid="link-back-results">Back to results</Link>
-          </div>
-
-          <div className="fix-columns">
-            <section className="glass fix-panel">
-              <div className="lbl mb-2 flex-none">What happened · Wave {wave}</div>
-              <div className="fix-timeline flex-1 space-y-2 pr-1">
-                {w && <div className="space-y-2">
-                  {w.fixes.map((f) => <div key={f.key} className="tile p-2.5" data-testid={`card-package-${f.key}`}>
-                    <div className="flex items-center justify-between gap-2"><span className="text-sm font-medium">{f.title}</span><span className="lbl !text-[9px]">{f.kind} · {f.theme}</span></div>
-                    <p className="mt-1 text-xs text-[#CFE3EE]">{f.acceptance}</p><div className="lbl mt-1 !text-[9px]">Closes {f.itemKeys.length} requirement{f.itemKeys.length === 1 ? '' : 's'}</div>
-                  </div>)}
-                  {!w.fixes.length && <p className="text-sm text-[#CFE3EE]">No work packages in this wave.</p>}
-                </div>}
-                {fixes.isLoading ? <Skeleton className="h-24" /> : fixes.isError ? <ErrorBlock message="Fix runs unavailable." onRetry={() => fixes.refetch()} /> : waveFixes.length ? waveFixes.map((fr) => <FixRunCard key={fr.id} fr={fr} runId={id} baseline={run} onReplay={(recording) => setScreen({ kind: 'replay', recording })} />) : <div className="tile p-3 text-sm text-[#CFE3EE]">No fix run for this wave yet.</div>}
-              </div>
-            </section>
-
-            <section className="glass fix-panel">
-              <div className="mb-2 flex flex-none items-center justify-between gap-2"><div className="lbl">After-fix orbit</div><span className="lbl !text-[9px] !normal-case !tracking-normal">{after.data ? 'Measured verification' : 'Baseline orbit · no fresh verification'}</span></div>
-              <div className="fix-orbit flex-1 rounded-2xl border border-[#7CC9E8]/20">
-                {after.data ? <OrbitView run={after.data} statuses={Object.fromEntries(after.data.findings.map((f) => [f.key, f.status]))} selected={picked} onPick={setPicked} /> :
-                  <OrbitView run={run} statuses={Object.fromEntries(run.findings.map((f) => [f.key, f.status]))} selected={picked} onPick={setPicked} />}
-              </div>
-              {selectedFinding && <div className="tile mt-2 max-h-24 flex-none overflow-auto p-2 text-xs"><div className="lbl">{selectedFinding.id} · {selectedFinding.statusText}</div><div className="mt-1">{selectedFinding.title}</div><p className="mt-1 text-[#CFE3EE]">{selectedFinding.why}</p></div>}
-            </section>
-
-            <section className="glass fix-panel">
-              <div className="lbl mb-1 flex-none">Plan vs result</div>
-              <p className="mb-3 flex-none text-[10px] text-[#CFE3EE]">Projected is a forecast. Actual appears only after verification.</p>
-              <div className="fix-bars flex-1 space-y-3 pr-1">
-                {run.standards.map((standard) => {
-                  const baseline = pc(standard.readiness);
-                  const projected = pc(w?.readiness[standard.id] ?? standard.readiness);
-                  const actual = after.data ? pc(after.data.standards.find((item) => item.id === standard.id)?.readiness) : null;
-                  return <div key={standard.id} className="space-y-1.5" data-testid={`bars-${standard.id}`}>
-                    <div className="font-head text-xs">{standard.short}</div>
-                    {[
-                      { label: 'Baseline', value: baseline, color: '#7CC9E8' },
-                      { label: 'Projected', value: projected, color: '#00E5FF' },
-                      ...(actual == null ? [] : [{ label: 'Actual', value: actual, color: '#4FD99A' }]),
-                    ].map((bar) => <div key={bar.label} className="flex items-center gap-2 text-[10px]">
-                      <span className="w-[58px] text-[#CFE3EE]">{bar.label}</span><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full" style={{ width: `${bar.value}%`, background: bar.color }} /></div><span className="w-8 text-right font-mono">{bar.value}%</span>
-                    </div>)}
-                  </div>;
-                })}
-              </div>
-              {base && <div className="lbl mt-2 flex-none !text-[9px]">Baseline · {base.failed} failing · {base.partial} partial · {base.blocking} must-fix</div>}
-              <div className="mt-3 flex flex-none flex-wrap gap-2">
-                <button className="btn !px-2.5 !py-2 text-xs" onClick={() => download(`${import.meta.env.BASE_URL}api/greenlight/runs/${run.id}/reports/fix-prompt?format=md`)} data-testid="button-download-prompt"><FileText size={14} /> Fix prompt (.md)</button>
-                <button className="btn btn-primary !px-2.5 !py-2 text-xs" disabled={!enabled || !wave || start.isPending} onClick={() => gated(() => start.mutate({ id, data: { wave } }, { onSuccess: (fr) => { setDismissed(null); setScreen({ kind: 'live', fixId: fr.id }); qc.invalidateQueries({ queryKey: getListFixRunsQueryKey(id) }); } }))} data-testid="button-start-fix">
-                  {start.isPending ? 'Starting' : enabled && !signedIn ? 'Sign in to fix' : 'Start AI fix'}
-                </button>
-              </div>
-              {!cfg.isLoading && !enabled && <p className="mt-2 flex-none text-xs" data-testid="text-fix-disabled"><Dot color="#FFA62B" word={DISABLED_MSG} /><span className="mt-1 block text-[10px] text-[#CFE3EE]">{reason || 'The recorded session shows the same run end to end.'} <Link href={`/replay/${DEMO_RECORDING}`} className="underline" style={{ color: '#00E5FF' }}>Watch it</Link>.</span></p>}
-              {start.isError && <p className="mt-2 flex-none text-xs"><Dot color="#FF5C6E" word={err?.message || 'Could not start the fix'} />{/expire|working copy|re-?upload/i.test(err?.message ?? '') && <span className="mt-1 block text-[10px]">The working copy expired. <Link href="/start" className="underline">Upload the zip again</Link> to continue.</span>}</p>}
-              {selectedFix?.pullRequestUrl && <div className="lbl mt-2 flex-none !text-[9px]">Pull request opened. Greenlight never merges it for you; review and merge it yourself.</div>}
-            </section>
-          </div>
         </div>
       )}
     </Shell>

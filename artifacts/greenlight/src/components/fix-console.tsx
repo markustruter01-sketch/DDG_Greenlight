@@ -168,6 +168,8 @@ export function FixConsole({ source, project, wave, onExit, exitLabel }: { sourc
   const next = nextIdx >= 0 ? view.packages[nextIdx] : null;
   const doneCount = view.packageState.filter((s) => s === 'done').length;
   const touched = Object.entries(view.files);
+  // Lines added and removed so far, counted from every edit hunk; they count up and down live.
+  const lines = touched.reduce((n, [, f]) => ({ add: n.add + f.added, del: n.del + f.removed }), { add: 0, del: 0 });
   const affected = useMemo(() => {
     // Documents (standards and clauses) this run has reached so far: every started or finished package.
     const items = view.packages.flatMap((p, i) => (view.packageState[i] !== 'queued' ? p.items : []));
@@ -262,6 +264,10 @@ export function FixConsole({ source, project, wave, onExit, exitLabel }: { sourc
             {!touched.length && <li style={{ color: '#7CC9E8' }}>No edits yet</li>}
           </ul>
 
+          <div className="fc-lines-live" data-testid="lines-live">
+            <div><b className="tabular" style={{ color: '#4FD99A' }}>+{lines.add.toLocaleString()}</b><span>lines added</span></div>
+            <div><b className="tabular" style={{ color: '#FF8C9A' }}>−{lines.del.toLocaleString()}</b><span>lines removed</span></div>
+          </div>
           <div className="fc-stats">
             <div><b>{view.reads}</b><span>files read</span></div>
             <div><b>{view.edits}</b><span>edits</span></div>
