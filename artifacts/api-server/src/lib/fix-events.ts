@@ -45,7 +45,11 @@ export interface FixRecording {
   /** Final file list with before/after, so the review step works offline. */
   changes: { file: string; before: string; after: string }[];
   /** Readiness before and after, per standard, from the deterministic engine. */
-  outcome: { before: Record<string, number>; after: Record<string, number>; verdictBefore: string; verdictAfter: string; changed?: Record<string, string> };
+  outcome: {
+    before: Record<string, number>; after: Record<string, number>; verdictBefore: string; verdictAfter: string; changed?: Record<string, string>;
+    /** Clauses the wave's packages set out to close, how many the re-check rates met, which stayed open, and how many retarget rounds ran. */
+    targeted?: number; met?: number; open?: string[]; retargetRounds?: number;
+  };
 }
 
 /** A FixEvent without its timestamp; distributive so each variant keeps its own fields. */
