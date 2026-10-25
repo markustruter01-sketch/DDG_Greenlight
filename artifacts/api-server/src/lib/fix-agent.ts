@@ -141,8 +141,14 @@ export async function runFixAgent({ root, wave, packages, session, snapshots, bl
       }
     }
     if (m.type === "result") {
-      if (m.is_error) throw new Error("Claude could not complete this wave");
+      // The cost is real whether or not the round finished, so it is reported before any error.
       if (typeof m.total_cost_usd === "number") session.emit({ type: "cost", usd: m.total_cost_usd, turns: m.num_turns ?? turns });
+      if (m.is_error) {
+        // Say why (error_max_turns, error_max_budget_usd, error_during_execution…): the caller decides whether to go on.
+        const why = [m.subtype, ...(Array.isArray(m.errors) ? m.errors.map(String) : [])].filter(Boolean).join("; ");
+        await Promise.all(pending);
+        throw new Error(`Claude could not complete this round${why ? ` (${why.slice(0, 300)})` : ""}`);
+      }
       if (m.result) session.emit({ type: "note", text: String(m.result).slice(0, 600) });
     }
   }

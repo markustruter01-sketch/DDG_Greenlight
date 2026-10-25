@@ -141,7 +141,15 @@ async function main() {
   }
   session.emit({ type: "stage", stage: "fixing", label: `Fixing wave ${waveNumber}: ${packages.length} work package${packages.length === 1 ? "" : "s"}` });
   session.emit({ type: "plan", packages: packages.map(planPackage) });
-  await runFixAgent({ root, wave: waveNumber, packages, session, snapshots, blocked });
+  // A round that runs out of turns or budget still leaves its edits on disk; the re-check below
+  // measures them and the retarget rounds pick up whatever is still open, so this is not fatal.
+  try {
+    await runFixAgent({ root, wave: waveNumber, packages, session, snapshots, blocked });
+  } catch (error: any) {
+    session.emit({ type: "note", text: `Main round stopped early: ${error?.message || error}; re-checking what landed` });
+    const closed = new Set(session.events.filter(e => e.type === "package" && e.status === "done").map(e => (e as any).index as number));
+    packages.forEach((f: any, i: number) => { if (!closed.has(i)) session.emit({ type: "package", index: i, total: packages.length, title: f.title, status: "done" }); });
+  }
 
   let after = await readWorkspace(root, blocked);
   const diffFiles = () => [...new Set([...original.keys(), ...after.keys()])].filter(f => original.get(f) !== after.get(f));

@@ -91,7 +91,10 @@ jobs:
           GREENLIGHT_FIX_MODEL: ${{ vars.GREENLIGHT_FIX_MODEL || 'claude-sonnet-4-6' }}
           GREENLIGHT_FIX_MAX_TURNS: '60'
           GREENLIGHT_FIX_BUDGET_USD: '8'
+        # The console output is kept beside the recording so a failed run can still be read.
         run: |
+          set -o pipefail
+          mkdir -p "$GITHUB_WORKSPACE/out"
           node dist/tools/record-fix.mjs \
             --repo "$GITHUB_WORKSPACE/subject" \
             --project "${{ inputs.project }}" \
@@ -99,9 +102,11 @@ jobs:
             --wave "${{ inputs.wave }}" \
             --out "$GITHUB_WORKSPACE/out/recording.json" \
             ${{ inputs.run_tests && '--test' || '' }} \
-            ${{ inputs.allow_all_dirs && '--allow-all-dirs' || '' }}
+            ${{ inputs.allow_all_dirs && '--allow-all-dirs' || '' }} \
+            2>&1 | tee "$GITHUB_WORKSPACE/out/recorder.log"
 
       - name: Upload the recording
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fix-recording-wave-${{ inputs.wave }}
@@ -109,13 +114,15 @@ jobs:
           retention-days: 30
 
       # Artifact downloads are not reachable from the authoring session, so the
-      # recording is also pushed to its own branch, recording/<run id>.
+      # recording (or, after a failure, at least the console log) is also pushed
+      # to its own branch, recording/<run id>.
       - name: Push to a recording branch
-        if: success()
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -e
+          [ -d out ] || { echo "nothing to push"; exit 0; }
           cd out
           git init -q -b "recording/${{ github.run_id }}"
           git config user.name "github-actions"
