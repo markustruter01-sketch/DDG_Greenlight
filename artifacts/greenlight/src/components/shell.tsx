@@ -41,7 +41,7 @@ export const STEPS = [
 export function Shell({
   children,
   runId,
-  bg = 'vestrahorn.webp',
+  bg: _bg = 'graphite',
   chrome = true,
   runMeta,
   tourHeaderHighlight = false,
@@ -67,7 +67,7 @@ export function Shell({
     <div className="app-shell relative flex flex-col">
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center"
-        style={{ backgroundColor: '#06131A', backgroundImage: `linear-gradient(180deg,rgba(6,19,26,.42),rgba(6,19,26,.3) 45%,rgba(6,19,26,.55)),url(${base}${bg})`, backgroundPosition: 'center 38%' }}
+        style={{ backgroundColor: '#16181C', backgroundImage: 'radial-gradient(1100px 700px at 18% 0%,rgba(255,255,255,.06),transparent 60%),radial-gradient(900px 600px at 90% 100%,rgba(255,255,255,.04),transparent 60%),linear-gradient(180deg,#1A1D21,#121417)' }}
       />
       {chrome && <header className="screen-header glass relative z-20 flex items-center justify-between gap-3">
         <Link href="/" className="flex items-center gap-3" data-testid="link-home">

@@ -824,3 +824,19 @@ select.field option{background:#0B1F2A}
 .fc-lines-live div{text-align:center;padding:10px 6px;border-radius:12px;background:rgba(6,19,26,.6);border:1px solid rgba(255,255,255,.28)}
 .fc-lines-live b{display:block;font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;line-height:1;transition:color .3s}
 .fc-lines-live span{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#B9DCEA}
+
+/* Graphite (25 Oct): dark grey ground instead of the photo. On a flat ground the glass is a faint
+   white tint, so white type keeps its contrast; ink wells still hold running text. */
+body{background:#16181C}
+.glass{background:rgba(255,255,255,.075);border-color:rgba(255,255,255,.14);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.btn{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16)}
+.btn-primary{background:#007A99;border-color:#007A99}
+.btn-go{background:#1E9E62;border-color:#4FD99A}
+.float-nav-btn{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16)}
+.float-nav-btn.is-on{background:rgba(0,122,153,.45);border-color:#00E5FF}
+.welcome-step,.result-band{background:rgba(255,255,255,.075)}
+.ink,.tile,.fc-pkg,.fc-chip,.fc-stats div,.fc-lines-live div,.orbit-layer-pill,.chip,.guide-step,.rule-block,.ann-item{background:rgba(0,0,0,.28)!important;border-color:rgba(255,255,255,.1)!important}
+.ink-deep,.fc-term,.field{background:rgba(0,0,0,.38)!important}
+.orbit-workspace{background:rgba(0,0,0,.22)}
+.glass,.btn,.float-nav-btn,.tp-label,.fc-top,.fc-bar{text-shadow:none}
+.site-loader{background:#16181C}
