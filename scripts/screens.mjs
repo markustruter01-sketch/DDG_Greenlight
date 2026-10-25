@@ -72,9 +72,27 @@ for (let i = 0; i < 48; i++) {
   if (await page.locator('[data-testid=button-tour-done]').isVisible().catch(() => false)) break;
 }
 
+// Start page: two choices, the standards modal and an explainer.
+await page.goto(`${base}/start`, { waitUntil: 'networkidle' });
+await page.waitForTimeout(2500);
+await shot('70-start');
+await page.locator('[data-testid=button-change-standards]').click().catch(() => note('no change button'));
+await page.waitForTimeout(800);
+await shot('71-start-standards');
+await page.keyboard.press('Escape');
+await page.locator('[data-testid=button-info-owasp-asvs]').first().click().catch(() => note('no info button'));
+await page.waitForTimeout(800);
+await shot('72-start-info');
+await page.keyboard.press('Escape');
+// Plan, Fixing (empty state), Verified and Sign-off with the recorded waves.
+await page.goto(`${base}/plan/${runId}`, { waitUntil: 'networkidle' });
+await page.waitForTimeout(3000);
+await shot('75-plan');
 await page.goto(`${base}/fix/${runId}`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(3000);
 await shot('80-fix');
+await page.goto(`${base}/plan/${runId}`, { waitUntil: 'networkidle' });
+await page.waitForTimeout(2000);
 await page.locator('[data-testid=link-recorded-fix]').click().catch(() => note('no recorded-fix link'));
 await page.waitForTimeout(12000);
 await shot('81-replay-12s');
@@ -91,15 +109,25 @@ if (bb) {
 await page.keyboard.press('End');
 await page.waitForTimeout(1500);
 await shot('85-replay-end');
-// From the end card to the orbit: lights turn green for the clauses the fix closed.
+// From the end card to Verified: lights turn green for the clauses the fix closed.
 await page.locator('[data-testid=button-outcome-exit]').click().catch(() => note('no outcome exit'));
 await page.waitForTimeout(1000);
-await shot('86-after-orbit-before-flip');
+await shot('86-verified-before-flip');
 await page.waitForTimeout(3500);
-await shot('87-after-orbit');
+await shot('87-verified');
 await page.locator('[data-testid=button-show-before]').click().catch(() => {});
 await page.waitForTimeout(1200);
-await shot('88-after-orbit-toggled-before');
+await shot('88-verified-toggled-before');
+await page.locator('[data-testid=button-waves-all-waves]').click().catch(() => note('no all-waves switch'));
+await page.waitForTimeout(3500);
+await shot('89-verified-all-waves');
+await page.locator('[data-testid=link-signoff]').click().catch(() => note('no signoff link'));
+await page.waitForTimeout(2500);
+await shot('89b-signoff');
+await page.locator('[data-testid=button-export]').click().catch(() => note('no export button'));
+await page.waitForTimeout(800);
+await shot('89c-signoff-export');
+await page.keyboard.press('Escape');
 
 // How it checks, a finding's rule block, and the 404.
 await page.goto(`${base}/how-it-checks`, { waitUntil: 'networkidle' });

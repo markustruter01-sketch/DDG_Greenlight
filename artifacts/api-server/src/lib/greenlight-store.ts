@@ -80,14 +80,33 @@ export async function fixRuns(runId: string) {
   const rows = await db.select().from(greenlightFixes).where(eq(greenlightFixes.runId, runId)).orderBy(desc(greenlightFixes.createdAt));
   return rows.map(r => r.result);
 }
+/**
+ * The public sample project: God's Eye View at a pinned commit, assessed with
+ * the same options the recorded fix sessions used, so the sample's "before"
+ * matches the recordings. The pin keeps the baseline still while the wave
+ * pull requests are merged on the real repository. Override with
+ * GREENLIGHT_DEMO_REF (a branch, tag or commit) to move it.
+ */
+export const DEMO_REPO = "https://github.com/pierretruter07-sudo/gods-eye-view";
+export const DEMO_REF = process.env.GREENLIGHT_DEMO_REF || "109f5d9";
+export const DEMO_OPTIONS = {
+  standards: ["asvs5", "iso27001", "nist-ssdf", "ism-e8", "ed153", "mil882e"],
+  levels: { asvs5: "2", ed153: "3" },
+  classification: "PROTECTED",
+  maturity: 2,
+};
 export async function seedDemo() {
   const existing = await listProjects();
   const previous = existing.find(p => p.name === "gods-eye-view");
+  const source = `${DEMO_REPO}/tree/${DEMO_REF}`;
   if (previous) {
     const latest = await getRun(previous.latestRunId);
-    if (latest.result.classification.rulesVersion === classificationRules.version) return;
+    const sameRules = latest.result.classification.rulesVersion === classificationRules.version;
+    const samePin = previous.source === source;
+    const sameOptions = JSON.stringify((latest.result.standards ?? []).map((s: any) => s.id)) === JSON.stringify(DEMO_OPTIONS.standards) && latest.result.maturity === DEMO_OPTIONS.maturity;
+    if (sameRules && samePin && sameOptions) return;
   }
-  const options = { github: "https://github.com/pierretruter07-sudo/gods-eye-view", standards: ["asvs5", "iso27001", "nist-ssdf", "ism-e8", "ed153", "mil882e", "iso42001"], levels: { asvs5: "2", ed153: "3" }, maturity: 1 };
+  const options = { github: source, ...DEMO_OPTIONS };
   const e = await engine;
   const snapshot = await e.snapshotFromGithub(options.github);
   await saveAssessment({ name: snapshot.name, source: snapshot.source, evidence: e.gatherEvidence(snapshot), classification: suggestClassification(snapshot), isDemo: true }, options, previous?.id);

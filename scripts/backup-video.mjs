@@ -27,7 +27,7 @@ if (!runId) throw new Error('no demo run');
 await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' });
 await wait(8000);                                   // loader + home
 await page.locator('[data-testid=button-watch-how]').click().catch(() => {});
-await wait(47000);                                  // explainer video
+await wait(92000);                                  // explainer video (1:30)
 await page.keyboard.press('Escape');
 await wait(1000);
 
@@ -43,8 +43,8 @@ await wait(2000);
 await page.locator('[data-testid=button-tour-done]').click().catch(() => {});
 await wait(1500);
 
-await page.goto(`${base}/fix/${runId}`, { waitUntil: 'networkidle' });
-await wait(4000);
+await page.goto(`${base}/plan/${runId}`, { waitUntil: 'networkidle' });
+await wait(9000);                                   // the plan
 await page.locator('[data-testid=link-recorded-fix]').click();
 await wait(15000);                                  // first 15 s at 1×
 await page.locator('[data-testid=button-speed-4]').click().catch(() => {});
@@ -52,9 +52,13 @@ await wait(60000);                                  // 4 minutes of the run at 4
 await page.keyboard.press('End');
 await wait(6000);                                   // end card
 await page.locator('[data-testid=button-outcome-exit]').click().catch(() => {});
-await wait(7000);                                   // lights to green
+await wait(7000);                                   // verified: lights to green
+await page.locator('[data-testid=button-waves-all-waves]').click().catch(() => {});
+await wait(6000);                                   // every wave applied
+await page.locator('[data-testid=link-signoff]').click().catch(() => {});
+await wait(8000);                                   // sign-off
 await page.goto(`${base}/how-it-checks`, { waitUntil: 'networkidle' });
-await wait(6000);
+await wait(5000);
 
 const video = page.video();
 await context.close();

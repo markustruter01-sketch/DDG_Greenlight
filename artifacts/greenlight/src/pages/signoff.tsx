@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link, useParams, useSearch } from 'wouter';
 import { Check, Download, FileCheck2, GitPullRequest, Home, Package } from 'lucide-react';
 import { getGetAssessmentQueryKey, useGetAssessment } from '@workspace/api-client-react';
-import { Shell, DEMO_RECORDING } from '@/components/shell';
+import { Shell, DEMO_RECORDING, DEMO_WAVES } from '@/components/shell';
+import { WaveSwitch } from '@/components/wave-switch';
 import { ErrorBlock, Modal, Skeleton } from '@/components/gl';
 import { useAfter } from '@/lib/after';
 import { STATUS_WORD, download, reportUrl } from '@/lib/greenlight';
@@ -18,6 +19,8 @@ export default function Signoff() {
   const q = useGetAssessment(id, { query: { enabled: !!id, queryKey: getGetAssessmentQueryKey(id) } });
   const run = q.data;
   const after = useAfter(run, search);
+  const afterParam = useMemo(() => new URLSearchParams(search).get('after'), [search]);
+  const recWaves = afterParam ? DEMO_WAVES.filter((w) => afterParam.split(',').includes(w.name)) : [];
   const [exportOpen, setExportOpen] = useState(false);
   const changed = useMemo(() => {
     if (!run) return [];
@@ -53,8 +56,9 @@ export default function Signoff() {
           <section className="glass plan-main" style={{ borderColor: 'rgba(79,217,154,.6)', boxShadow: '0 8px 32px rgba(0,0,0,.35), 0 0 60px rgba(79,217,154,.18)' }}>
             <div className="flex items-center gap-3">
               <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full border-2" style={{ background: '#1E9E62', borderColor: '#4FD99A', boxShadow: '0 0 30px rgba(79,217,154,.6)' }}><Check size={28} /></span>
-              <div><div className="lbl !text-[#4FD99A]">Step 6 of 6 · Signed off</div><h1 className="font-head mt-1 text-3xl font-bold leading-tight">Wave {after.wave} is fixed and proven.</h1></div>
+              <div><div className="lbl !text-[#4FD99A]">Step 6 of 6 · Signed off</div><h1 className="font-head mt-1 text-3xl font-bold leading-tight">{recWaves.length > 1 ? `Waves ${recWaves[0].wave}–${recWaves[recWaves.length - 1].wave} are fixed and proven.` : `Wave ${after.wave} is fixed and proven.`}</h1></div>
             </div>
+            <WaveSwitch page="signoff" runId={id} after={afterParam} />
             <p className="ink p-3 text-sm leading-relaxed" style={{ color: '#EAF3F8' }}>
               {greened} requirement{greened === 1 ? '' : 's'} went from red or amber to green. Every one was re-checked by the same written rules that found it, on the fixed code{after.tests ? `, with ${after.tests.pass} of ${after.tests.total} tests passing` : ''}. Nothing was merged for you.
             </p>
@@ -120,7 +124,12 @@ export default function Signoff() {
               <p className="ink p-3 text-xs leading-relaxed" style={{ color: '#EAF3F8' }}>The pull request contains only the files you approved. Greenlight never merges; your team reviews and merges it.</p>
             </>
           ) : (
-            <p className="ink p-3 text-sm leading-relaxed" style={{ color: '#EAF3F8' }}>This is the recorded session, so there is no pull request to open. On a live run this button opens the pull request on GitHub or downloads the fixed repository as a zip. <Link href={`/replay/${DEMO_RECORDING}`} className="underline" style={{ color: '#00E5FF' }}>Replay the session</Link> to see the changes it made.</p>
+            <>
+              {recWaves.filter((w) => w.pullRequest).map((w) => (
+                <a key={w.name} className="btn btn-primary w-full justify-center !py-3" href={w.pullRequest} target="_blank" rel="noreferrer" data-testid={`button-export-pr-${w.wave}`}><GitPullRequest size={16} /> Wave {w.wave} · open the pull request on GitHub</a>
+              ))}
+              <p className="ink p-3 text-sm leading-relaxed" style={{ color: '#EAF3F8' }}>{recWaves.some((w) => w.pullRequest) ? 'Each pull request holds exactly the files that wave changed, opened on the real repository and never merged by Greenlight. ' : 'This is the recorded session, so there is no pull request to open. '}On a live run this button also downloads the fixed repository as a zip. <Link href={`/replay/${recWaves[recWaves.length - 1]?.name ?? DEMO_RECORDING}`} className="underline" style={{ color: '#00E5FF' }}>Replay the session</Link>.</p>
+            </>
           )}
         </div>
       </Modal>

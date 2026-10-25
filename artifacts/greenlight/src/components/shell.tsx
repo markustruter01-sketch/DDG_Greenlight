@@ -8,8 +8,14 @@ import { Guide, type GuideSpec } from '@/components/guide';
 
 const base = import.meta.env.BASE_URL;
 
-/** The recorded fix session shown from the plan (public/demo/<name>.json). */
-export const DEMO_RECORDING = 'gev-wave3';
+/** The recorded fix sessions of the sample project, in wave order (public/demo/<name>.json). */
+export const DEMO_WAVES: { name: string; wave: number; pullRequest?: string }[] = [
+  { name: 'gev-wave3', wave: 3, pullRequest: 'https://github.com/pierretruter07-sudo/gods-eye-view/pull/38' },
+];
+/** The recording opened from "Watch the recorded fix". */
+export const DEMO_RECORDING = DEMO_WAVES[0].name;
+/** `?after=` value that shows every recorded wave applied in order. */
+export const DEMO_ALL_WAVES = DEMO_WAVES.map((w) => w.name).join(',');
 
 export function Logo() {
   return (

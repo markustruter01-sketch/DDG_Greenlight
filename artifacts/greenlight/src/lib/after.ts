@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { getGetAssessmentQueryKey, getListFixRunsQueryKey, getListReportsQueryKey, useGetAssessment, useListFixRuns, useListReports, type AssessmentRun, type FixRun } from '@workspace/api-client-react';
-import { useRecording } from '@/pages/replay';
+import { useRecordings } from '@/pages/replay';
 import { reduceEvents, type FixRecording } from '@/lib/fix-events';
 import { pc } from '@/lib/greenlight';
 
@@ -42,7 +42,7 @@ export function useAfter(run: AssessmentRun | undefined, search: string): AfterV
   const params = new URLSearchParams(search);
   const fixId = params.get('fix');
   const recName = params.get('after');
-  const rec = useRecording(recName);
+  const rec = useRecordings(recName);
   const fixes = useListFixRuns(run?.id ?? '', { query: { enabled: !!run?.id && !!fixId, queryKey: getListFixRunsQueryKey(run?.id ?? '') } });
   const fixRun = fixId ? (fixes.data ?? []).find((f) => f.id === fixId) ?? (fixes.data ?? [])[(fixes.data ?? []).length - 1] : undefined;
   const vid = fixRun?.verificationRunId ?? '';
@@ -58,20 +58,31 @@ export function useAfter(run: AssessmentRun | undefined, search: string): AfterV
       durationMs: 0, costUsd: null, tests: null,
     };
     if (recName) {
-      const r = rec.rec;
-      if (!r) return { ...empty, mode: 'recording', loading: rec.state === 'loading' || rec.state === 'idle', recording: r };
-      const statusesAfter = { ...statusesBefore, ...(r.outcome.changed ?? {}) };
+      const list = rec.recs;
+      if (!list.length) return { ...empty, mode: 'recording', loading: rec.state === 'loading' || rec.state === 'idle', recording: null };
+      // Waves apply in order: each later wave's changes sit on top of the earlier ones.
+      const first = list[0], last = list[list.length - 1];
+      const changed: Record<string, string> = {};
+      for (const r of list) Object.assign(changed, r.outcome.changed ?? {});
+      const statusesAfter = { ...statusesBefore, ...changed };
       const readinessAfter: Record<string, number> = { ...readinessBefore };
-      for (const [k, v] of Object.entries(r.outcome.after)) readinessAfter[k] = Math.round(v);
+      for (const [k, v] of Object.entries(last.outcome.after)) readinessAfter[k] = Math.round(v);
       const readinessB: Record<string, number> = { ...readinessBefore };
-      for (const [k, v] of Object.entries(r.outcome.before)) readinessB[k] = Math.round(v);
-      const view = reduceEvents(r.events);
-      const lines = Object.values(view.files).reduce((n, f) => ({ add: n.add + f.added, del: n.del + f.removed }), { add: 0, del: 0 });
+      for (const [k, v] of Object.entries(first.outcome.before)) readinessB[k] = Math.round(v);
+      let files = 0, add = 0, del = 0, duration = 0, cost = 0, costSeen = false, pass = 0, total = 0, testsSeen = false;
+      for (const r of list) {
+        const view = reduceEvents(r.events);
+        files += view.done?.filesChanged ?? r.changes.length;
+        for (const f of Object.values(view.files)) { add += f.added; del += f.removed; }
+        duration += r.durationMs;
+        if (view.cost) { cost += view.cost.usd; costSeen = true; }
+        if (view.tests.pass + view.tests.fail) { pass = view.tests.pass; total = view.tests.pass + view.tests.fail; testsSeen = true; }
+      }
       return {
-        ...empty, mode: 'recording', recording: r, statusesAfter, readinessBefore: readinessB, readinessAfter,
-        changedKeys: Object.keys(r.outcome.changed ?? {}), verdictBefore: r.outcome.verdictBefore, verdictAfter: r.outcome.verdictAfter,
-        wave: r.wave, filesChanged: view.done?.filesChanged ?? r.changes.length, linesAdded: lines.add, linesRemoved: lines.del,
-        durationMs: r.durationMs, costUsd: view.cost?.usd ?? null, tests: view.tests.pass + view.tests.fail ? { pass: view.tests.pass, total: view.tests.pass + view.tests.fail } : null,
+        ...empty, mode: 'recording', recording: last, statusesAfter, readinessBefore: readinessB, readinessAfter,
+        changedKeys: Object.keys(changed), verdictBefore: first.outcome.verdictBefore, verdictAfter: last.outcome.verdictAfter,
+        wave: last.wave, filesChanged: files, linesAdded: add, linesRemoved: del,
+        durationMs: duration, costUsd: costSeen ? cost : null, tests: testsSeen ? { pass, total } : null,
       };
     }
     if (fixId) {
@@ -89,5 +100,5 @@ export function useAfter(run: AssessmentRun | undefined, search: string): AfterV
       };
     }
     return empty;
-  }, [run, recName, rec.rec, rec.state, fixId, fixRun, verification.data, verification.isLoading, fixes.isLoading, reports.data, vid]);
+  }, [run, recName, rec.recs, rec.state, fixId, fixRun, verification.data, verification.isLoading, fixes.isLoading, reports.data, vid]);
 }

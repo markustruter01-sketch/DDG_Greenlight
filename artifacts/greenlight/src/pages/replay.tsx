@@ -23,6 +23,23 @@ export function useRecording(name: string | null) {
   return { rec, state };
 }
 
+/** Several published recordings at once (comma-separated names), in order; used for the cumulative view. */
+export function useRecordings(csv: string | null) {
+  const [recs, setRecs] = useState<FixRecording[]>([]);
+  const [state, setState] = useState<'idle' | 'loading' | 'ok' | 'missing'>('idle');
+  useEffect(() => {
+    const names = (csv ?? '').split(',').map((n) => n.trim()).filter(Boolean);
+    if (!names.length) { setRecs([]); setState('idle'); return; }
+    let gone = false;
+    setState('loading');
+    Promise.all(names.map((n) => fetch(`${import.meta.env.BASE_URL}demo/${encodeURIComponent(n)}.json`, { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))))
+      .then((list: FixRecording[]) => { if (!gone) { setRecs(list); setState('ok'); } })
+      .catch(() => { if (!gone) { setRecs([]); setState('missing'); } });
+    return () => { gone = true; };
+  }, [csv]);
+  return { recs, state };
+}
+
 /**
  * A recorded fix session played back with its real pacing. The presenter can
  * scrub, pause, change speed and skip; the badge says it is a recording.

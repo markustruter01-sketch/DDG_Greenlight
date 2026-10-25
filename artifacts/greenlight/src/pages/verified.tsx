@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearch } from 'wouter';
 import { FileCheck2, GitPullRequest, Package, PenLine } from 'lucide-react';
 import { getGetAssessmentQueryKey, useGetAssessment } from '@workspace/api-client-react';
-import { Shell, DEMO_RECORDING } from '@/components/shell';
+import { Shell, DEMO_RECORDING, DEMO_WAVES } from '@/components/shell';
+import { WaveSwitch } from '@/components/wave-switch';
 import { ErrorBlock, Skeleton } from '@/components/gl';
 import { OrbitView } from '@/components/orbit-view';
 import { useAfter } from '@/lib/after';
@@ -19,6 +20,8 @@ export default function Verified() {
   const q = useGetAssessment(id, { query: { enabled: !!id, queryKey: getGetAssessmentQueryKey(id) } });
   const run = q.data;
   const after = useAfter(run, search);
+  const afterParam = useMemo(() => new URLSearchParams(search).get('after'), [search]);
+  const lastRec = afterParam ? DEMO_WAVES.find((w) => w.name === afterParam.split(',').pop()) : undefined;
   const [showAfter, setShowAfter] = useState(true);
   const [applied, setApplied] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
@@ -60,6 +63,7 @@ export default function Verified() {
         <div className="ver-layout">
           <section className="glass ver-col">
             <div className="lbl">Step 5 of 6 · Before → after, measured</div>
+            <WaveSwitch page="verified" runId={id} after={afterParam} />
             {Object.keys(after.readinessAfter).map((k) => {
               const b = after.readinessBefore[k] ?? 0, a = after.readinessAfter[k] ?? b;
               const ceil = Math.max(a, Math.round(((run.waves[run.waves.length - 1]?.readiness ?? {})[run.standards.find((s) => s.short === k)?.id ?? ''] ?? 0) * 100));
@@ -96,7 +100,10 @@ export default function Verified() {
                 <button className="btn justify-center" disabled={!after.verificationPdfUrl} onClick={() => after.verificationPdfUrl && download(reportUrl(after.verificationPdfUrl, 'pdf'))} data-testid="button-verification-report"><FileCheck2 size={15} /> Verification report (PDF)</button>
               </>
             ) : (
-              <div className="ink p-3 text-xs leading-relaxed" style={{ color: '#EAF3F8' }}><span className="lbl !text-[#FFA62B]">Recorded session</span><br />On a live run this panel holds the pull request, the fixed code as a zip and the signed verification report. <Link href={`/replay/${DEMO_RECORDING}`} className="underline" style={{ color: '#00E5FF' }}>Replay the session</Link>.</div>
+              <>
+                {lastRec?.pullRequest && <a className="btn btn-primary justify-center !py-3.5 text-base" href={lastRec.pullRequest} target="_blank" rel="noreferrer" data-testid="button-review-pr"><GitPullRequest size={16} /> Review the pull request</a>}
+                <div className="ink p-3 text-xs leading-relaxed" style={{ color: '#EAF3F8' }}><span className="lbl !text-[#FFA62B]">Recorded session</span><br />{lastRec?.pullRequest ? 'The pull request above holds exactly the files this session changed, opened on the real repository. ' : ''}On a live run this panel also holds the fixed code as a zip and the signed verification report. <Link href={`/replay/${lastRec?.name ?? DEMO_RECORDING}`} className="underline" style={{ color: '#00E5FF' }}>Replay the session</Link>.</div>
+              </>
             )}
             <div className="ink p-3 text-xs leading-relaxed" style={{ color: '#EAF3F8' }}><span className="lbl !text-[#4FD99A]">What the report says</span><br />Every requirement that changed, the rule that re-checked it, the file and line, and the commit. Signed by the engine version, not by a model.</div>
             <div className="ink mt-auto flex flex-col gap-2 p-3" style={{ borderColor: 'rgba(0,229,255,.5)' }}>

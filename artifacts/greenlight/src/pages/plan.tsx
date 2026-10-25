@@ -10,7 +10,7 @@ import {
   useListFixRuns,
   useStartFix,
 } from '@workspace/api-client-react';
-import { Shell, DEMO_RECORDING } from '@/components/shell';
+import { Shell, DEMO_RECORDING, DEMO_WAVES } from '@/components/shell';
 import { Dot, ErrorBlock, Skeleton } from '@/components/gl';
 import { useGate } from '@/hooks/use-gate';
 import { download, pc, tally } from '@/lib/greenlight';
@@ -53,6 +53,7 @@ export default function Plan() {
   const inFlight = (fixes.data ?? []).find((f) => WORKING.test(f.status) && !AWAITING.test(f.status) && !f.error);
   const doneWaves = new Set((fixes.data ?? []).filter((f) => f.verificationRunId).map((f) => f.wave));
   const err = start.error as { message?: string } | null;
+  const demoRec = DEMO_WAVES.find((d) => d.wave === wave);
 
   const waveName = (n: number) => {
     const themes = [...new Set((run?.waves.find((x) => x.number === n)?.fixes ?? []).map((f) => f.theme))].slice(0, 2);
@@ -138,7 +139,7 @@ export default function Plan() {
                 </button>
               )}
               <div className="flex gap-2">
-                <Link href={`/replay/${DEMO_RECORDING}`} className="btn flex-1 justify-center text-xs" data-testid="link-recorded-fix"><MonitorPlay size={14} /> Watch the recorded fix</Link>
+                <Link href={`/replay/${demoRec?.name ?? DEMO_RECORDING}`} className="btn flex-1 justify-center text-xs" data-testid="link-recorded-fix"><MonitorPlay size={14} /> {demoRec ? `Watch wave ${demoRec.wave} recorded` : 'Watch the recorded fix'}</Link>
                 <button className="btn flex-1 justify-center text-xs" onClick={() => download(`${import.meta.env.BASE_URL}api/greenlight/runs/${run.id}/reports/fix-prompt?format=md`)} data-testid="button-download-prompt"><FileText size={14} /> Fix prompt (.md)</button>
               </div>
               {!cfg.isLoading && !enabled && <p className="text-[11px] leading-relaxed" data-testid="text-fix-disabled"><Dot color="#FFA62B" word="Live fixing is off on this deployment" /><span className="mt-0.5 block" style={{ color: '#EAF3F8' }}>{reason || 'The recorded session shows the same run end to end.'}</span></p>}
