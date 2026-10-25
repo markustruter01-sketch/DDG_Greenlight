@@ -124,7 +124,9 @@ export async function assessEvidence(held: any, options: any) {
         // What the fix console shows while Claude works: the clauses it closes, what the check found and where.
         items: f.items.map((i: any) => ({ standard: i.standard, short: i.short, id: i.id, title: i.title, blocking: !!i.blocking })),
         found: f.found || undefined,
-        where: (f.where || []).map((r: any) => (r.line ? `${r.path}:${r.line}` : r.path || "")).filter(Boolean) })),
+        where: (f.where || []).map((r: any) => (r.line ? `${r.path}:${r.line}` : r.path || "")).filter(Boolean),
+        // What the rule's pattern check looks for (descriptive), so a fixer knows what would satisfy it.
+        looksFor: f.signal ? e.SIGNALS.find((s: any) => s.id === f.signal)?.detect?.looksFor : undefined })),
     };
   });
   const active = standards.filter((s: any) => !s.verdict.startsWith("Not applicable"));
