@@ -462,10 +462,10 @@ main,.grid>*{min-width:0}
 select.field option{background:#0B1F2A}
 .glitch{position:relative;display:inline-block;color:#F7FBFF}
 .glitch::before,.glitch::after{content:attr(data-text);position:absolute;inset:0;pointer-events:none}
-.glitch::before{color:#ff2d55;transform:translate(2px,0);clip-path:inset(0 0 55% 0);animation:gl1 3.2s infinite steps(1)}
-.glitch::after{color:#00E5FF;transform:translate(-2px,0);clip-path:inset(50% 0 0 0);animation:gl2 2.7s infinite steps(1)}
-@keyframes gl1{0%,86%,100%{transform:translate(0,0);opacity:.0}88%{transform:translate(4px,-1px);opacity:.9}92%{transform:translate(-3px,1px);opacity:.9}96%{transform:translate(2px,0);opacity:.9}}
-@keyframes gl2{0%,80%,100%{transform:translate(0,0);opacity:0}82%{transform:translate(-4px,1px);opacity:.9}90%{transform:translate(3px,-1px);opacity:.9}}
+.glitch::before{color:#ff2d55;opacity:0;clip-path:inset(0 0 55% 0);animation:gl1 5s infinite steps(1)}
+.glitch::after{color:#00E5FF;opacity:0;clip-path:inset(50% 0 0 0);animation:gl2 5s infinite steps(1)}
+@keyframes gl1{0%,7%,100%{transform:translate(0,0);opacity:0}1%{transform:translate(4px,-1px);opacity:.9}3%{transform:translate(-3px,1px);opacity:.9}5%{transform:translate(2px,0);opacity:.9}}
+@keyframes gl2{0%,7%,100%{transform:translate(0,0);opacity:0}2%{transform:translate(-4px,1px);opacity:.9}4%{transform:translate(3px,-1px);opacity:.9}6%{transform:translate(-2px,0);opacity:.9}}
 @keyframes pulse-ring{0%{transform:scale(.9);opacity:.7}100%{transform:scale(1.6);opacity:0}}
 .skel{background:linear-gradient(90deg,rgba(124,201,232,.08),rgba(124,201,232,.2),rgba(124,201,232,.08));background-size:200% 100%;animation:sk 1.4s infinite;border-radius:12px}
 @keyframes sk{to{background-position:-200% 0}}
@@ -510,13 +510,14 @@ select.field option{background:#0B1F2A}
 .orbit-tour-shade{position:absolute;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(3,10,14,.36);backdrop-filter:blur(3px)}
 .orbit-tour-card{width:min(420px,calc(100% - 28px));padding:20px;background:rgba(8,24,33,.94);text-align:left}
 /* The caption: half-size, and it glides to whichever of six slots keeps clear of the arrow's target */
-.orbit-tour-caption{position:absolute;z-index:30;width:min(560px,calc(100% - 28px));padding:12px 16px 10px;background:rgba(6,19,26,.9);border-color:rgba(0,229,255,.45);box-shadow:0 14px 48px rgba(0,0,0,.55),0 0 32px rgba(0,229,255,.12);animation:tour-cap-in .45s ease-out;transition:left .6s cubic-bezier(.4,0,.2,1),right .6s cubic-bezier(.4,0,.2,1),top .6s cubic-bezier(.4,0,.2,1),bottom .6s cubic-bezier(.4,0,.2,1),transform .6s cubic-bezier(.4,0,.2,1)}
-.orbit-tour-caption.cap-bc{left:50%;right:auto;bottom:14px;top:auto;transform:translateX(-50%)}
-.orbit-tour-caption.cap-tc{left:50%;right:auto;top:14px;bottom:auto;transform:translateX(-50%)}
-.orbit-tour-caption.cap-bl{left:14px;right:auto;bottom:14px;top:auto;transform:none}
-.orbit-tour-caption.cap-br{left:auto;right:14px;bottom:14px;top:auto;transform:none}
-.orbit-tour-caption.cap-tl{left:14px;right:auto;top:14px;bottom:auto;transform:none}
-.orbit-tour-caption.cap-tr{left:auto;right:14px;top:14px;bottom:auto;transform:none}
+.orbit-tour-caption{position:absolute;left:0;top:0;z-index:30;width:min(560px,calc(100% - 28px));padding:12px 16px 10px;background:rgba(6,19,26,.9);border-color:rgba(0,229,255,.45);box-shadow:0 14px 48px rgba(0,0,0,.55),0 0 32px rgba(0,229,255,.12);animation:tour-cap-in .45s ease-out;will-change:transform;transition:transform .8s cubic-bezier(.33,0,.15,1)}
+/* Until the first measure, the preferred slot by CSS; after it, one translate() that glides between slots. */
+.orbit-tour-caption.cap-bc:not(.is-placed){left:50%;bottom:14px;top:auto;transform:translateX(-50%)}
+.orbit-tour-caption.cap-tc:not(.is-placed){left:50%;top:14px;transform:translateX(-50%)}
+.orbit-tour-caption.cap-bl:not(.is-placed){left:14px;bottom:14px;top:auto}
+.orbit-tour-caption.cap-br:not(.is-placed){left:auto;right:14px;bottom:14px;top:auto}
+.orbit-tour-caption.cap-tl:not(.is-placed){left:14px;top:14px}
+.orbit-tour-caption.cap-tr:not(.is-placed){left:auto;right:14px;top:14px}
 .tour-cap-kicker{color:#00E5FF!important;font-size:10px}
 .tour-cap-title{margin-top:2px;font-size:clamp(15px,1.15vw,18px);font-weight:600;line-height:1.2;color:#F7FBFF;text-wrap:balance}
 .tour-cap-body{margin-top:5px;font-size:clamp(12px,.85vw,14px);line-height:1.45;color:#E3F1F8;max-width:62ch;text-wrap:pretty}
@@ -559,6 +560,18 @@ select.field option{background:#0B1F2A}
 .float-nav-btn:hover{transform:translateY(-2px);border-color:#00E5FF;color:#F7FBFF;box-shadow:0 10px 28px rgba(0,0,0,.45),0 0 18px rgba(0,229,255,.25)}
 .float-nav-btn.is-on{color:#F7FBFF;border-color:#00E5FF;background:rgba(0,122,153,.42);box-shadow:0 8px 24px rgba(0,0,0,.4),0 0 22px rgba(0,229,255,.3)}
 .float-nav-btn svg{color:#00E5FF}
+.float-nav-step{font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#7CC9E8;padding:3px 6px;border-radius:999px;border:1px solid rgba(124,201,232,.35);margin-right:2px}
+.float-nav-btn.is-on .float-nav-step{color:#06131A;background:#00E5FF;border-color:#00E5FF}
+/* Orbit controls: stack when the orbit is narrow (the fix page), instead of pills running into the legend. */
+.orbit-view-root{container-type:inline-size}
+@container (max-width:860px){
+  .orbit-controls-row{display:flex;flex-wrap:wrap;justify-content:space-between;row-gap:4px}
+  .orbit-controls-left{order:1;flex:1 1 auto;flex-wrap:wrap}
+  .orbit-controls-right{order:2;flex:0 0 auto}
+  .orbit-controls-center{order:3;flex:1 1 100%;justify-content:flex-start}
+  .orbit-controls-center:empty{display:none}
+  .orbit-legend{display:none}
+}
 @media (prefers-reduced-motion:reduce){.tp-line{stroke-dashoffset:0;animation:none}.tp-flow,.tp-ping,.tp-box{animation:none}.tp-head,.tp-label,.tp-box{opacity:1;animation:none}.orbit-tour-caption{animation:none}}
 .tour-focusing .result-band,.tour-focusing .readiness-column{opacity:.2;transition:opacity .25s ease}
 .readiness-column.is-tour-highlight{outline:2px solid #00E5FF;outline-offset:-2px;box-shadow:0 0 0 4px rgba(0,229,255,.22),0 0 28px rgba(0,229,255,.4);opacity:1!important}
@@ -594,7 +607,7 @@ select.field option{background:#0B1F2A}
   .orbit-legend{display:none}
   .orbit-layer-pill{padding:6px}
   .orbit-tour-caption{padding:10px 12px}
-  .orbit-tour-caption[class*=cap-]{left:6px;right:6px;bottom:6px;top:auto;width:auto;transform:none}
+  .orbit-tour-caption[class*=cap-]{left:6px;right:6px;bottom:6px;top:auto;width:auto;transform:none!important}
   .float-nav{gap:6px;padding:6px 8px 10px}
   .float-nav-btn{padding:8px 11px;font-size:12px}
   .float-nav-btn span{display:none}
@@ -622,7 +635,7 @@ select.field option{background:#0B1F2A}
 .fc-meta{display:flex;align-items:center;gap:10px}
 .fc-badge{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;border-radius:999px;border:1px solid}
 .fc-badge-live{color:#FF5C6E;border-color:rgba(255,92,110,.5);animation:fc-blink 1.6s infinite}
-.fc-badge-rec{color:#F5C451;border-color:rgba(245,196,81,.5)}
+.fc-badge-rec{color:#FFA62B;border-color:rgba(255,166,43,.5)}
 @keyframes fc-blink{50%{opacity:.55}}
 .fc-clock{font-size:15px;color:#F7FBFF}.fc-clock small{color:#7CC9E8;font-size:11px}
 .fc-body{display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr) minmax(300px,380px);gap:8px;flex:1;min-height:0}
@@ -656,7 +669,7 @@ select.field option{background:#0B1F2A}
 .fc-next{flex:none;margin-top:6px;padding:8px 12px;border-radius:14px;border:1px dashed rgba(124,201,232,.3);color:#CFE3EE}
 .fc-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
 .fc-chip{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 8px;border-radius:999px;border:1px solid rgba(124,201,232,.35);color:#CFE3EE;background:rgba(11,31,42,.5)}
-.fc-chip b{color:#00E5FF;font-weight:600;margin-right:4px}.fc-chip i{font-style:normal;color:#F5C451}
+.fc-chip b{color:#00E5FF;font-weight:600;margin-right:4px}.fc-chip i{font-style:normal;color:#FFA62B}
 .fc-files{flex:1;min-height:40px;overflow:auto;font-size:11px;display:flex;flex-direction:column;gap:3px}
 .fc-files li{display:flex;justify-content:space-between;gap:8px;color:#CFE3EE}.fc-files li span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#F7FBFF}
 .fc-stats{flex:none;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}

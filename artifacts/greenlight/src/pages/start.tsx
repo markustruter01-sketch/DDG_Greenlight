@@ -181,7 +181,7 @@ export default function Start({ auth }: { auth?: 'in' | 'up' }) {
                   <div className="min-w-0 flex-1">
                     <div className="font-head truncate text-lg">{p.name}</div>
                     <div className="lbl truncate !normal-case !tracking-normal">{p.source}</div>
-                    <div className="mt-1 text-xs"><Dot color={/not|fail/i.test(p.verdict) ? '#FF5C6E' : /ready|clear/i.test(p.verdict) ? '#4FD99A' : '#F5C451'} word={p.verdict} /> <span className="lbl ml-2">{p.runCount} runs</span></div>
+                    <div className="mt-1 text-xs"><Dot color={/not|fail/i.test(p.verdict) ? '#FF5C6E' : /ready|clear/i.test(p.verdict) ? '#4FD99A' : '#FFA62B'} word={p.verdict} /> <span className="lbl ml-2">{p.runCount} runs</span></div>
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1.5">

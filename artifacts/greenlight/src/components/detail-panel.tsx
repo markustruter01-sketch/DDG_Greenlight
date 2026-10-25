@@ -109,7 +109,7 @@ function RuleBlock({ f }: { f: Finding }) {
     <section className="rule-block" data-testid={`rule-block-${f.key}`}>
       <div className="flex items-center justify-between gap-2">
         <div className="lbl">Checked by</div>
-        <span className="rule-badge"><ScanSearch size={11} /> Rules, not AI</span>
+        <span className="rule-badge"><ScanSearch size={11} /> Code, not AI</span>
       </div>
       <div className="rule-grid">
         <span className="lbl !text-[9px]">Clause</span>
@@ -176,7 +176,7 @@ function StandardView({ run, config, id, st, projected, onRun, readiness, onSele
           <div className="font-head text-4xl">{readiness}%</div>
           <div className="lbl mt-1">{projected ? 'Projected readiness' : 'Readiness'}</div>
         </div>
-        <Dot color={s.blocking ? '#FF5C6E' : s.partial || s.unanswered ? '#F5C451' : '#4FD99A'} word={s.verdict} />
+        <Dot color={s.blocking ? '#FF5C6E' : s.partial || s.unanswered ? '#FFA62B' : '#4FD99A'} word={s.verdict} />
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {rows.map(([n, v, c]) => (

@@ -3,7 +3,7 @@ import type { AssessmentRun, Finding, Wave } from '@workspace/api-client-react';
 export const STATUS_COLOR: Record<string, string> = {
   C: '#4FD99A',
   L: '#4FD99A',
-  P: '#F5C451',
+  P: '#FFA62B',
   N: '#FF5C6E',
   UN: '#CFE3EE',
   NA: '#7F98A8',
@@ -74,7 +74,7 @@ export function tally(run: AssessmentRun, st: Record<string, string>) {
 
 export function tone(c: { failed: number; blocking: number; partial: number; unanswered: number }) {
   if (c.blocking > 0 || c.failed > 0) return { color: '#FF5C6E', word: 'Not ready' };
-  if (c.partial > 0 || c.unanswered > 0) return { color: '#F5C451', word: 'Conditions apply' };
+  if (c.partial > 0 || c.unanswered > 0) return { color: '#FFA62B', word: 'Conditions apply' };
   return { color: '#4FD99A', word: 'Ready' };
 }
 

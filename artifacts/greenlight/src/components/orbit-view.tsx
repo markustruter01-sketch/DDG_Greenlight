@@ -627,7 +627,7 @@ export function OrbitView({
               onClick={() => setLayers((current) => ({ ...current, [layer.id]: !current[layer.id] }))}
               className={`orbit-layer-pill ${layers[layer.id] ? 'is-active' : ''}`}
               aria-pressed={layers[layer.id]} data-testid={`button-layer-${layer.id}`} data-tour-target={`layer-${layer.id}`}>
-              <span className="orbit-layer-dot" style={{ background: layer.id === 'mustfix' ? '#FF5C6E' : layer.id === 'gaps' ? '#F5C451' : layer.id === 'passing' ? '#4FD99A' : '#00E5FF' }} />
+              <span className="orbit-layer-dot" style={{ background: layer.id === 'mustfix' ? '#FF5C6E' : layer.id === 'gaps' ? '#FFA62B' : layer.id === 'passing' ? '#4FD99A' : '#00E5FF' }} />
               {layer.name}
             </button>
           ))}
@@ -636,7 +636,7 @@ export function OrbitView({
         <div className="orbit-controls-right">
           <div className="orbit-legend" aria-label="Requirement status legend" data-tour-target="status-legend">
             <span><i style={{ background: '#FF5C6E' }} />Must fix</span>
-            <span><i style={{ background: '#F5C451' }} />Partial</span>
+            <span><i style={{ background: '#FFA62B' }} />Partial</span>
             <span><i style={{ background: '#4FD99A' }} />Met</span>
             <span><i style={{ background: '#00E5FF' }} />Links</span>
           </div>

@@ -25,14 +25,14 @@ const CLASSES = ['Non-classified', 'OFFICIAL: Sensitive', 'PROTECTED', 'SECRET',
 const TOUR_SEEN_KEY = 'ddg-greenlight-results-tour-seen';
 const TOUR_STEPS = [
   { title: 'This is your software', body: 'The glass planet represents the software being assessed.', seconds: 12 },
-  { title: 'Three rings, three kinds of requirement', body: 'Safety is the inner ring, security is the middle ring, and AI requirements are the outer ring.', seconds: 14 },
+  { title: 'Three rings, three kinds of requirement', body: 'The inner blue ring is safety, the middle cyan ring is security, and the outer white ring is AI requirements. Each lights up in turn.', seconds: 14 },
   { title: 'Every dot is one requirement', body: 'Green means met, amber means partial, red means failed, and dim dots are not applicable.', seconds: 14 },
   { title: 'Raised pins are must-fix', body: 'Raised red pins mark blocking items that must be addressed before release.', seconds: 14 },
   { title: 'Links show shared evidence', body: 'A link joins requirements in different standards that rest on the same evidence. One fix can close all of them.', seconds: 15 },
   { title: 'Readiness per standard', body: 'Each ring shows readiness against a standard. Select one to see its controls and further testing.', seconds: 14 },
   { title: 'The plan, wave by wave', body: 'Waves show projected progress. The same rules check the code again after fixes.', seconds: 20 },
   { title: 'Click anything for its evidence', body: 'A finding shows its rating, evidence files and rule, and proof of fix.', seconds: 15 },
-  { title: 'Fix it with Claude', body: 'Checking is rules, never AI. Only fixing uses Claude, and you approve every change.', seconds: 18 },
+  { title: 'Fix it with Claude', body: 'Every check you just saw is code: written rules that read the repository, with no AI involved. Claude is used for one thing only, writing the fixes, and you approve each change before the same code checks again.', seconds: 18 },
 ];
 const TOUR_TOTAL_SECONDS = TOUR_STEPS.reduce((n, s) => n + s.seconds, 0);
 const VOICE_KEY = 'ddg-greenlight-tour-voice';
@@ -90,7 +90,8 @@ export default function Results() {
   const narrator = useMemo(() => createNarrator(), []);
   const tourActiveNow = ['playing', 'paused', 'complete'].includes(tourStatus) && tourIndex >= 0;
   // The caption keeps out of the way of whatever the arrow points at.
-  const captionSlot = useCaptionSlot(tourActiveNow, pointer?.target ?? null, 'bc', `${tourRunId}:${tourIndex}`);
+  const captionPlace = useCaptionSlot(tourActiveNow, pointer?.target ?? null, 'bc', `${tourRunId}:${tourIndex}`);
+  const captionSlot = captionPlace.slot;
   const orbitControls = useRef<OrbitControlApi | null>(null);
   const savedTour = useRef<SavedTourState | null>(null);
   const tourDeadline = useRef(0);
@@ -370,7 +371,7 @@ export default function Results() {
       ],
       // 8 · Fix it with Claude
       [
-        { at: 0, run: () => { controls.emphasis('core'); void controls.home(); dom('rules-badge', 'Checked by rules · no AI'); } },
+        { at: 0, run: () => { controls.emphasis('core'); void controls.home(); dom('rules-badge', 'Checked by code, not AI'); } },
         { at: 7, run: () => dom('fix-button', 'Fix it with Claude') },
         { at: 13, run: () => dom('nav-replay', 'Watch a recorded fix') },
       ],
@@ -471,7 +472,7 @@ export default function Results() {
                 const list = findingsFor(run, a.id);
                 const open = list.filter((f) => ['P', 'N', 'UN'].includes(st[f.key]));
                 const bad = list.some((f) => st[f.key] === 'N' || (f.blocking && st[f.key] === 'P'));
-                const color = !list.length ? '#7F98A8' : bad ? '#FF5C6E' : open.length ? '#F5C451' : '#4FD99A';
+                const color = !list.length ? '#7F98A8' : bad ? '#FF5C6E' : open.length ? '#FFA62B' : '#4FD99A';
                 return (
                   <button key={a.id} className="tile ann-item" onClick={() => setTarget({ kind: 'theme', id: a.id })} data-testid={`button-annunciator-${a.id}`}>
                     <span className="dotx" style={{ background: color }} />
@@ -532,7 +533,8 @@ export default function Results() {
                   </div>
                 }
                 tourCaption={tourIndex >= 0 && ['playing', 'paused', 'complete'].includes(tourStatus) ? (
-                  <div className={`glass orbit-tour-caption cap-${captionSlot}`} data-slot={captionSlot} data-testid="tour-caption">
+                  <div className={`glass orbit-tour-caption cap-${captionSlot} ${captionPlace.ready ? 'is-placed' : ''}`} data-slot={captionSlot} data-testid="tour-caption"
+                    style={captionPlace.ready ? { transform: `translate3d(${captionPlace.x}px,${captionPlace.y}px,0)`, transition: captionPlace.moves === 0 ? 'none' : undefined } : { visibility: 'hidden' }}>
                     <div className="tour-cap-kicker lbl">{tourIndex + 1} / {TOUR_STEPS.length} · Guided tour</div>
                     <div className="tour-cap-title font-head">{TOUR_STEPS[tourIndex].title}</div>
                     <p className="tour-cap-body">{TOUR_STEPS[tourIndex].body}</p>

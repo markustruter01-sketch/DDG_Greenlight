@@ -4,7 +4,7 @@ import { layout, linkedIds } from '../orbit/model.js';
 import { orbitItems, orbitThemes } from '@/lib/greenlight';
 
 const colors: Record<string, string> = {
-  C: '#4FD99A', L: '#4FD99A', P: '#F5C451', N: '#FF5C6E', UN: '#CFE3EE', NA: '#6e8490',
+  C: '#4FD99A', L: '#4FD99A', P: '#FFA62B', N: '#FF5C6E', UN: '#CFE3EE', NA: '#6e8490',
 };
 
 /** SVG fallback for browsers where WebGL is unavailable; it uses the same requirement layout. */

@@ -15,7 +15,7 @@ import { RINGS, isBlocking, nodeKind, nodeOpacity } from './model.js';
 const COLOR = {
   C: 0x4fd99a,
   L: 0x4fd99a,
-  P: 0xf5c451,
+  P: 0xffa62b,
   N: 0xff5c6e,
   NA: 0x4a5a70,
   UN: 0xcfe3ee,
@@ -40,6 +40,9 @@ const BASE = Object.freeze({
   links: 1,
   must: 1,
   other: 1,
+  safGlow: 0,
+  secGlow: 0,
+  aiGlow: 0,
 });
 /** Tour emphasis: multipliers on each part's opacity. */
 const EMPHASIS = Object.freeze({
@@ -56,6 +59,8 @@ const EMPHASIS = Object.freeze({
   saf: {
     ...BASE,
     saf: 1.7,
+    safGlow: 1,
+    tube: 2.2,
     sec: 0.1,
     ai: 0.1,
     core: 0.35,
@@ -65,6 +70,8 @@ const EMPHASIS = Object.freeze({
   sec: {
     ...BASE,
     sec: 1.7,
+    secGlow: 1,
+    tube: 2.2,
     saf: 0.1,
     ai: 0.1,
     core: 0.35,
@@ -74,6 +81,8 @@ const EMPHASIS = Object.freeze({
   ai: {
     ...BASE,
     ai: 1.7,
+    aiGlow: 1,
+    tube: 2.2,
     saf: 0.1,
     sec: 0.1,
     core: 0.35,
@@ -254,6 +263,40 @@ export function createOrbitScene({ nodes, groups, themes }) {
           false,
         ),
         m,
+      ),
+    );
+  }
+
+  // One full, soft ring per lens: invisible until the tour emphasises that lens,
+  // so "the inner ring" reads as a ring even where its arcs have gaps.
+  for (const lens of ['saf', 'sec', 'ai']) {
+    const ring = RINGS[lens];
+    const m = new THREE.MeshBasicMaterial({
+      color: COLOR[lens],
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    fadeables.push({ material: m, base: 0.34, key: 'rings', part: `${lens}Glow` });
+    rings.add(
+      new THREE.Mesh(
+        new THREE.TorusGeometry(ring.radius, 0.075, 8, 160).rotateX(Math.PI / 2).translate(0, ring.base, 0),
+        m,
+      ),
+    );
+    const m2 = new THREE.MeshBasicMaterial({
+      color: COLOR[lens],
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    fadeables.push({ material: m2, base: 0.95, key: 'rings', part: `${lens}Glow` });
+    rings.add(
+      new THREE.Mesh(
+        new THREE.TorusGeometry(ring.radius, 0.018, 6, 160).rotateX(Math.PI / 2).translate(0, ring.base, 0),
+        m2,
       ),
     );
   }

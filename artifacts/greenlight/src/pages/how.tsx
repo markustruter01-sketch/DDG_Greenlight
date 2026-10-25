@@ -17,7 +17,7 @@ export default function How() {
     <Shell>
       <div className="how-layout" data-testid="how-page">
         <header className="how-head">
-          <div className="lbl !text-[#4FD99A]">Checking · no AI</div>
+          <div className="lbl !text-[#4FD99A]">Checking · code, not AI</div>
           <h1 className="font-head how-title">How Greenlight checks</h1>
           <p className="how-lede">Every rating comes from written rules run over the code. The same repository gives the same findings, the same scores and the same report, every time. No model is called anywhere in checking.</p>
         </header>

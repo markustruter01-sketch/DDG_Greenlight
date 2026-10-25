@@ -78,7 +78,7 @@ function useReplayClock(total: number) {
   return { t, playing, setPlaying, speed, setSpeed, seek };
 }
 
-const TONE: Record<string, string> = { ok: '#4FD99A', bad: '#FF5C6E', warn: '#F5C451', dim: '#7CC9E8' };
+const TONE: Record<string, string> = { ok: '#4FD99A', bad: '#FF5C6E', warn: '#FFA62B', dim: '#7CC9E8' };
 
 function HunkView({ hunk }: { hunk: string }) {
   return (
@@ -291,7 +291,7 @@ export function FixConsole({ source, project, wave, onExit, exitLabel }: { sourc
             <button className="btn !px-2.5 !py-2" onClick={() => clock.seek(total)} aria-label="Skip to end" data-testid="button-skip"><SkipForward size={15} /></button>
           </div>
         )}
-        {!replay && live.error && !finished && <span className="lbl !text-[#F5C451]">Stream lost · retrying</span>}
+        {!replay && live.error && !finished && <span className="lbl !text-[#FFA62B]">Stream lost · retrying</span>}
       </footer>
 
       {banner && (

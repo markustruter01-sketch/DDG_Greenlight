@@ -6,8 +6,13 @@ import type { PointerTarget } from '@/components/tour-pointer';
  * the one that covers nothing the slide is about wins. The caption only
  * moves when its current slot would overlap the target (or the detail
  * panel), so it stays put through small camera drift and glides when it must.
+ *
+ * The caption is positioned with one translate() from the stage's top-left,
+ * never with left/right/top/bottom swaps, so every move is one smooth
+ * transition instead of a jump between anchors.
  */
 export type CaptionSlot = 'bc' | 'tc' | 'bl' | 'br' | 'tl' | 'tr';
+export type CaptionPlace = { slot: CaptionSlot; x: number; y: number; ready: boolean; moves: number };
 
 const ORDER: CaptionSlot[] = ['bc', 'bl', 'br', 'tc', 'tl', 'tr'];
 const MARGIN = 14;
@@ -65,27 +70,43 @@ export function pickSlot(current: CaptionSlot, target: PointerTarget | null, pre
   return best;
 }
 
-/** Re-evaluates a few times a second while the tour runs. */
-export function useCaptionSlot(active: boolean, target: PointerTarget | null, preferred: CaptionSlot = 'bc', resetKey = ''): CaptionSlot {
-  const [slot, setSlot] = useState<CaptionSlot>(preferred);
+/** Pixel offset of a slot from the stage's top-left corner, for the caption's current size. */
+function placeOf(slot: CaptionSlot): { x: number; y: number } | null {
+  const stage = document.querySelector(STAGE)?.getBoundingClientRect();
+  const cap = document.querySelector(CAPTION)?.getBoundingClientRect();
+  if (!stage || !cap || !cap.width) return null;
+  const b = slotBox(slot, stage, cap.width, cap.height);
+  return { x: Math.round(b.x - stage.left), y: Math.round(b.y - stage.top) };
+}
+
+/** Re-evaluates a few times a second while the tour runs; a slot change glides, a size change follows. */
+export function useCaptionSlot(active: boolean, target: PointerTarget | null, preferred: CaptionSlot = 'bc', resetKey = ''): CaptionPlace {
+  const [place, setPlace] = useState<CaptionPlace>({ slot: preferred, x: 0, y: 0, ready: false, moves: 0 });
   const targetRef = useRef(target);
   targetRef.current = target;
-  const slotRef = useRef(slot);
-  slotRef.current = slot;
-  useEffect(() => { setSlot(preferred); }, [resetKey, preferred]);
+  const placeRef = useRef(place);
+  placeRef.current = place;
+  useEffect(() => {
+    // A new slide starts in the preferred slot; the first measure after mount sets the pixels.
+    setPlace((p) => (p.slot === preferred ? p : { ...p, slot: preferred }));
+  }, [resetKey, preferred]);
   useEffect(() => {
     if (!active) return;
-    let raf = 0, last = 0;
+    let raf = 0, last = -1e9;
     const tick = (now: number) => {
       if (now - last > 180) {
         last = now;
-        const next = pickSlot(slotRef.current, targetRef.current, preferred);
-        if (next !== slotRef.current) setSlot(next);
+        const cur = placeRef.current;
+        const slot = pickSlot(cur.slot, targetRef.current, preferred);
+        const px = placeOf(slot);
+        if (px && (slot !== cur.slot || !cur.ready || Math.abs(px.x - cur.x) > 1 || Math.abs(px.y - cur.y) > 1)) {
+          setPlace({ slot, x: px.x, y: px.y, ready: true, moves: cur.ready ? cur.moves + 1 : 0 });
+        }
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [active, preferred]);
-  return slot;
+  return place;
 }

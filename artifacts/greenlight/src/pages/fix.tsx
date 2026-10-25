@@ -75,7 +75,7 @@ function FixRunCard({ fr, runId, baseline, onReplay }: { fr: FixRun; runId: stri
         <div className="font-head text-xl">Wave {fr.wave} fix</div>
         <div className="flex items-center gap-2">
           {eventsOf(fr).length > 0 && <button className="btn !px-2.5 !py-1.5 text-xs" onClick={() => onReplay(recordingOf(fr, baseline, after.data))} data-testid={`button-replay-${fr.id}`}><MonitorPlay size={14} /> Replay the session</button>}
-          <Dot color={/fail|error/i.test(fr.status) ? '#FF5C6E' : WORKING.test(fr.status) ? '#F5C451' : '#4FD99A'} word={fr.status} />
+          <Dot color={/fail|error/i.test(fr.status) ? '#FF5C6E' : WORKING.test(fr.status) ? '#FFA62B' : '#4FD99A'} word={fr.status} />
         </div>
       </div>
       {fr.error && <Dot color="#FF5C6E" word={fr.error} />}
@@ -245,7 +245,7 @@ export default function Fix() {
                   {start.isPending ? 'Starting' : enabled && !signedIn ? 'Sign in to fix' : 'Start AI fix'}
                 </button>
               </div>
-              {!cfg.isLoading && !enabled && <p className="mt-2 flex-none text-xs" data-testid="text-fix-disabled"><Dot color="#F5C451" word={DISABLED_MSG} /><span className="mt-1 block text-[10px] text-[#CFE3EE]">{reason || 'The recorded session shows the same run end to end.'} <Link href={`/replay/${DEMO_RECORDING}`} className="underline" style={{ color: '#00E5FF' }}>Watch it</Link>.</span></p>}
+              {!cfg.isLoading && !enabled && <p className="mt-2 flex-none text-xs" data-testid="text-fix-disabled"><Dot color="#FFA62B" word={DISABLED_MSG} /><span className="mt-1 block text-[10px] text-[#CFE3EE]">{reason || 'The recorded session shows the same run end to end.'} <Link href={`/replay/${DEMO_RECORDING}`} className="underline" style={{ color: '#00E5FF' }}>Watch it</Link>.</span></p>}
               {start.isError && <p className="mt-2 flex-none text-xs"><Dot color="#FF5C6E" word={err?.message || 'Could not start the fix'} />{/expire|working copy|re-?upload/i.test(err?.message ?? '') && <span className="mt-1 block text-[10px]">The working copy expired. <Link href="/start" className="underline">Upload the zip again</Link> to continue.</span>}</p>}
               {selectedFix?.pullRequestUrl && <div className="lbl mt-2 flex-none !text-[9px]">Pull request opened. Greenlight never merges it for you; review and merge it yourself.</div>}
             </section>

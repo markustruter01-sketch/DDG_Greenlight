@@ -61,7 +61,7 @@ export function Shell({
         </Link>
         <div className="flex min-w-0 items-center justify-end gap-2">
           <Link href="/how-it-checks" className="lbl rounded-xl border px-3 py-2 hover:text-[#00E5FF]" style={{ borderColor: 'rgba(124,201,232,.3)' }} data-testid="text-checks" data-tour-target="rules-badge" data-tour-highlight={tourHeaderHighlight ? 'true' : undefined} title="How Greenlight checks">
-            Checks: rules, no AI
+            Checks: code, not AI
           </Link>
           {!runId && <Link href="/start" className="btn !px-3 !py-2" data-testid="link-saved-projects">Saved projects</Link>}
           <Show when="signed-in">
@@ -77,8 +77,9 @@ export function Shell({
       </header>}
       <main className="app-main relative z-10 flex flex-1 flex-col">{children}</main>
       {chrome && <nav className="float-nav" aria-label="Main">
-        {nav.map(({ href, label, icon: Icon, on, test, tour }) => (
-          <Link key={test} href={href} className={`float-nav-btn ${on ? 'is-on' : ''}`} aria-label={label} aria-current={on ? 'page' : undefined} data-testid={`link-footer-${test}`} data-tour-target={tour}>
+        {nav.map(({ href, label, icon: Icon, on, test, tour }, i) => (
+          <Link key={test} href={href} className={`float-nav-btn ${on ? 'is-on' : ''}`} aria-label={`Step ${i + 1}: ${label}`} aria-current={on ? 'page' : undefined} data-testid={`link-footer-${test}`} data-tour-target={tour}>
+            <span className="float-nav-step">Step {i + 1}</span>
             <Icon size={17} strokeWidth={1.8} />
             <span>{label}</span>
           </Link>
