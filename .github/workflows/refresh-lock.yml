@@ -23,10 +23,12 @@ jobs:
           node-version: 22
       - name: Apply the overrides to the lockfile only
         run: |
-          pnpm install --lockfile-only
-          grep -nE "^  (body-parser|zod)@" pnpm-lock.yaml
-          pnpm install --frozen-lockfile --ignore-scripts
-          pnpm audit --prod --audit-level=high
+          set -o pipefail
+          report() { tail -n 25 "$1" | sed 's/^/::error::/'; exit 1; }
+          pnpm install --lockfile-only 2>&1 | tee lock.log || report lock.log
+          grep -nE "^  (body-parser|zod)@" pnpm-lock.yaml | sed 's/^/::notice::/'
+          pnpm install --frozen-lockfile --ignore-scripts 2>&1 | tee install.log || report install.log
+          pnpm audit --prod --audit-level=high 2>&1 | tee audit.log || report audit.log
       - name: Push the lockfile
         run: |
           git config user.name "github-actions"
