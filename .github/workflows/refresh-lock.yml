@@ -1,0 +1,34 @@
+name: Refresh lockfile (one-off)
+
+# Temporary: applies the new overrides to pnpm-lock.yaml and pushes it back.
+# Removed in the next commit once the lockfile is updated.
+on:
+  push:
+    branches: [ci/name-audit-advisories]
+    paths: [.github/workflows/refresh-lock.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Apply the overrides to the lockfile only
+        run: |
+          pnpm install --lockfile-only
+          grep -nE "^  (body-parser|zod)@" pnpm-lock.yaml
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm audit --prod --audit-level=high
+      - name: Push the lockfile
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git commit -m "Lockfile: body-parser and zod to patched releases"
+          git push
