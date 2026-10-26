@@ -109,5 +109,9 @@ export async function seedDemo() {
   const options = { github: source, ...DEMO_OPTIONS };
   const e = await engine;
   const snapshot = await e.snapshotFromGithub(options.github);
+  // The sample project follows the pinned commit: when the pin moves, the project moves with it
+  // (saveAssessment refuses a re-assessment from a different source, which is right for users' projects).
+  if (previous && previous.source !== snapshot.source)
+    await db.update(greenlightProjects).set({ source: snapshot.source }).where(eq(greenlightProjects.id, previous.id));
   await saveAssessment({ name: snapshot.name, source: snapshot.source, evidence: e.gatherEvidence(snapshot), classification: suggestClassification(snapshot), isDemo: true }, options, previous?.id);
 }

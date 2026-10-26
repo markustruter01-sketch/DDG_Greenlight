@@ -55,7 +55,7 @@ await page.keyboard.press('End');
 await wait(6000);                                   // end card
 await page.locator('[data-testid=button-outcome-exit]').click().catch(() => {});
 await wait(7000);                                   // verified: lights to green
-await page.locator('[data-testid=button-waves-all-waves]').click().catch(() => {});
+await page.locator('[data-testid=button-waves-all-rounds]').click().catch(() => {});
 await wait(6000);                                   // every wave applied
 await page.locator('[data-testid=link-signoff]').click().catch(() => {});
 await wait(8000);                                   // sign-off

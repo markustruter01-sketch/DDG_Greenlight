@@ -8,7 +8,7 @@ import { DEMO_WAVES } from '@/components/shell';
 export function WaveSwitch({ page, runId, after }: { page: 'verified' | 'signoff'; runId: string; after: string | null }) {
   if (!after || DEMO_WAVES.length < 2) return null;
   const all = DEMO_WAVES.map((w) => w.name).join(',');
-  const options = [...DEMO_WAVES.map((w) => ({ label: `Wave ${w.wave}`, value: w.name })), { label: 'All waves', value: all }];
+  const options = [...DEMO_WAVES.map((w) => ({ label: `Round ${w.wave}`, value: w.name })), { label: 'All rounds', value: all }];
   return (
     <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Which waves to show" data-testid="wave-switch">
       {options.map((o) => (

@@ -76,7 +76,8 @@ export function useAfter(run: AssessmentRun | undefined, search: string): AfterV
         for (const f of Object.values(view.files)) { add += f.added; del += f.removed; }
         duration += r.durationMs;
         if (view.cost) { cost += view.cost.usd; costSeen = true; }
-        if (view.tests.pass + view.tests.fail) { pass = view.tests.pass; total = view.tests.pass + view.tests.fail; testsSeen = true; }
+        // The full suite, not a later spot-check: keep the biggest run seen across the rounds.
+        if (view.tests.pass + view.tests.fail > total) { pass = view.tests.pass; total = view.tests.pass + view.tests.fail; testsSeen = true; }
       }
       return {
         ...empty, mode: 'recording', recording: last, statusesAfter, readinessBefore: readinessB, readinessAfter,

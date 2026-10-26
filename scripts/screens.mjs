@@ -123,7 +123,7 @@ await shot('87-verified');
 await page.locator('[data-testid=button-show-before]').click().catch(() => {});
 await page.waitForTimeout(1200);
 await shot('88-verified-toggled-before');
-await page.locator('[data-testid=button-waves-all-waves]').click().catch(() => note('no all-waves switch'));
+await page.locator('[data-testid=button-waves-all-rounds]').click().catch(() => note('no all-waves switch'));
 await page.waitForTimeout(3500);
 await shot('89-verified-all-waves');
 await page.locator('[data-testid=link-signoff]').click().catch(() => note('no signoff link'));

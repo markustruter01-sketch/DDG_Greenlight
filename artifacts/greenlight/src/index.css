@@ -903,7 +903,7 @@ body{background:#16181C}
 .seg button.is-on{background:#007A99;color:#F7FBFF;box-shadow:0 0 16px rgba(0,229,255,.35)}
 .seg button.is-on em{color:#CFF4FF}
 /* Plan rounds */
-.jrounds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.jrounds{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
 @media (max-width:900px){.jrounds{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .jround{display:flex;flex-direction:column;gap:8px;padding:18px;border-radius:18px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12);text-align:left;color:#F7FBFF;cursor:pointer;font:inherit;transition:all .25s;min-height:0}
 .jround.is-on{border-color:#00E5FF;background:rgba(0,122,153,.22);box-shadow:0 0 30px rgba(0,229,255,.25)}
@@ -941,7 +941,10 @@ body{background:#16181C}
 .fc-pct small{font-size:20px}
 /* Orbit screen: controls above, pop-up over */
 .jorbit{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;width:min(1400px,calc(100% - 48px));margin:0 auto;padding:8px 0 16px}
-.jorbit-bar{flex:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px}
+.jorbit-bar{flex:none;display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;padding:10px 16px}
+.jorbit-bar>:first-child{flex:0 0 auto}
+.jorbit-bar>[data-testid=readiness-rings]{flex:1 1 560px}
+.jorbit-bar>:last-child{flex:0 0 auto;margin-left:auto}
 .jorbit-stage{position:relative;flex:1;min-height:0;overflow:hidden}
 .jpop{position:absolute;right:16px;top:16px;bottom:16px;width:min(420px,calc(100% - 32px));z-index:40;display:flex;flex-direction:column;overflow:hidden;animation:tour-cap-in .35s ease-out}
 .jpop-body{flex:1;min-height:0;overflow:auto;padding:0 2px}
