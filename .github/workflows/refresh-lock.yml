@@ -5,7 +5,7 @@ name: Refresh lockfile (one-off)
 on:
   push:
     branches: [ci/name-audit-advisories]
-    paths: [.github/workflows/refresh-lock.yml]
+    paths: [.github/workflows/refresh-lock.yml, pnpm-workspace.yaml]
 
 permissions:
   contents: write
