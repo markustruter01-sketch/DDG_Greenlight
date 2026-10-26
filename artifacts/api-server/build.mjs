@@ -28,6 +28,10 @@ async function buildAll() {
     // - uses native modules and loads them dynamically (e.g. sharp)
     // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
     external: [
+      // zod 4 initialises through an internal module cycle that esbuild's inlining reorders
+      // ("Class2 is not a constructor" at the first zod.string()); Node loads it correctly.
+      "zod",
+      "zod/*",
       "@anthropic-ai/claude-agent-sdk",
       "@clerk/*",
       "pdfkit",
