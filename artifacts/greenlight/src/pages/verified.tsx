@@ -63,7 +63,7 @@ export default function Verified() {
                 <div className="flex items-center gap-4"><span className="jbig" style={{ color: '#8A939B', fontSize: 84 }} data-testid="text-before">{before}%</span><span style={{ fontSize: 40, color: '#4FD99A' }}>→</span><span className="jbig" style={{ color: colorFor(now), fontSize: 84 }} data-testid="text-after">{applied ? now : before}%</span></div>
                 <p className="jp" data-testid="text-proof-summary">{greened} problem{greened === 1 ? '' : 's'} gone{counts ? ` · ${counts.unanswered} need your answers` : ''}{after.tests ? ` · ${after.tests.pass.toLocaleString()} of ${after.tests.total.toLocaleString()} tests pass` : ''}{after.filesChanged ? ` · ${after.filesChanged} files` : ''}</p>
                 <div className="flex flex-wrap items-center gap-3">
-                  <Link href={`/signoff/${id}${search}`} className="btn btn-go btn-big" data-testid="link-signoff">Sign it off <ArrowRight size={20} /></Link>
+                  <Link href={`/signoff/${id}${search ? `?${search.replace(/^\?/, '')}` : ''}`} className="btn btn-go btn-big" data-testid="link-signoff">Sign it off <ArrowRight size={20} /></Link>
                   <Link href={orbitHref} className="btn btn-quiet" data-testid="link-before-after"><OrbitIcon size={15} /> Before and after on the planet</Link>
                 </div>
                 <div className="flex flex-wrap gap-2">
