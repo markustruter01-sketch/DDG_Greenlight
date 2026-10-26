@@ -66,6 +66,23 @@ jobs:
           NODE_ENV: production
         run: pnpm --filter @workspace/greenlight --filter @workspace/api-server run build 2>&1 | tee build.log; test ${PIPESTATUS[0]} -eq 0
 
+      - name: API server starts
+        # Typecheck and build cannot catch a module that fails as it loads; start the built server and ask it for its config.
+        env:
+          PORT: '5199'
+          NODE_ENV: production
+          DATABASE_URL: postgres://ci:ci@127.0.0.1:1/none
+        run: |
+          cd artifacts/api-server
+          node --enable-source-maps ./dist/index.mjs > start.log 2>&1 &
+          pid=$!
+          for i in $(seq 1 20); do
+            sleep 1
+            if ! kill -0 $pid 2>/dev/null; then echo "::error title=API server exited on start::$(tail -n 15 start.log | tr '\n' ' ')"; exit 1; fi
+            if grep -q "Server listening" start.log; then echo "API server is listening"; kill $pid; exit 0; fi
+          done
+          echo "::error title=API server did not start::$(tail -n 15 start.log | tr '\n' ' ')"; kill $pid; exit 1
+
       - name: Publish build errors
         if: failure()
         env:
