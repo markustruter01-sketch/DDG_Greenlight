@@ -1,7 +1,7 @@
 name: Refresh lockfile (one-off)
 
 # Temporary: applies the new overrides to pnpm-lock.yaml and pushes it back.
-# Removed in the next commit once the lockfile is updated.
+# (zod: catalog moved to 4.x; 3.x has no patched release.) Removed in the next commit once the lockfile is updated.
 on:
   push:
     branches: [ci/name-audit-advisories]
