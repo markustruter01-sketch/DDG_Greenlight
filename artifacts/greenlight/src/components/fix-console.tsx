@@ -185,7 +185,7 @@ export function FixConsole({ source, project, wave, onExit, exitLabel }: { sourc
           <img src={`${import.meta.env.BASE_URL}ddg-mark.png`} alt="" width={28} height={28} />
           <div>
             <div className="lbl">Fix it with Claude</div>
-            <div className="font-head text-sm">{project} · Wave {wave}</div>
+            <div className="font-head text-sm">{project} · Round {wave}</div>
           </div>
         </div>
         <ol className="fc-stages" aria-label="Stages">

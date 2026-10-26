@@ -10,6 +10,7 @@ import NotFound from '@/pages/not-found';
 import Welcome from '@/pages/welcome';
 import Start from '@/pages/start';
 import Results from '@/pages/results';
+import Orbit from '@/pages/orbit';
 import Fix from '@/pages/fix';
 import Plan from '@/pages/plan';
 import Verified from '@/pages/verified';
@@ -113,9 +114,11 @@ function Providers() {
             <Switch>
               <Route path="/" component={Welcome} />
               <Route path="/start">{() => <Start />}</Route>
+              <Route path="/start/:stage">{() => <Start />}</Route>
               <Route path="/sign-in/*?">{() => <Start auth="in" />}</Route>
               <Route path="/sign-up/*?">{() => <Start auth="up" />}</Route>
               <Route path="/results/:id" component={Results} />
+              <Route path="/orbit/:id" component={Orbit} />
               <Route path="/plan/:id" component={Plan} />
               <Route path="/fix/:id" component={Fix} />
               <Route path="/verified/:id" component={Verified} />

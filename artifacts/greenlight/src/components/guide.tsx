@@ -39,20 +39,18 @@ export function Guide({ spec }: { spec: GuideSpec }) {
       </button>
     );
   }
+  const now = spec.steps[spec.current] ?? spec.steps[spec.steps.length - 1] ?? '';
+  const next = spec.steps[spec.current + 1];
   return (
     <div className={`glass guide tone-${spec.tone ?? 'cyan'}`} role="region" aria-label="Now do this" data-testid="guide">
-      <div className="guide-k"><span className="guide-ball" aria-hidden="true" /><span className="lbl" style={{ color: spec.tone === 'ok' ? '#4FD99A' : '#00E5FF' }}>Now do this</span></div>
+      <div className="guide-k"><span className="guide-ball" aria-hidden="true" /><span className="lbl" style={{ color: spec.tone === 'ok' ? '#4FD99A' : '#00E5FF' }}>Now</span></div>
       <ol className="guide-steps">
-        {spec.steps.map((s, i) => (
-          <li key={i} className={`guide-step ${i === spec.current ? 'is-now' : i < spec.current ? 'is-done' : ''}`} aria-current={i === spec.current ? 'step' : undefined} data-testid={`guide-step-${i + 1}`}>
-            <span className="guide-n">{i < spec.current ? '✓' : i + 1}</span>
-            <span>{s}</span>
-          </li>
-        ))}
+        <li className="guide-step is-now" aria-current="step" data-testid={`guide-step-${spec.current + 1}`}><span className="guide-n">{spec.current + 1}</span><span>{now}</span></li>
+        {next && <li className="guide-step guide-next" data-testid={`guide-step-${spec.current + 2}`}><span className="guide-n">{spec.current + 2}</span><span>{next}</span></li>}
       </ol>
       <span className="sr-only" aria-live="polite">{announce}</span>
       {spec.aside}
-      <button className="lbl guide-hide hover:text-[#00E5FF]" onClick={() => setHidden(true)} data-testid="button-guide-hide" aria-label="Hide the guide"><X size={12} className="mr-1 inline" />Hide guide</button>
+      <button className="lbl guide-hide hover:text-[#00E5FF]" onClick={() => setHidden(true)} data-testid="button-guide-hide" aria-label="Hide the guide"><X size={12} className="mr-1 inline" />Hide</button>
     </div>
   );
 }

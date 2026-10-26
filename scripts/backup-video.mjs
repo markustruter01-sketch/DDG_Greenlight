@@ -32,6 +32,8 @@ await page.keyboard.press('Escape');
 await wait(1000);
 
 await page.goto(`${base}/results/${runId}`, { waitUntil: 'networkidle' });
+await wait(5000);                                   // what's wrong
+await page.goto(`${base}/orbit/${runId}`, { waitUntil: 'networkidle' });
 await wait(4000);
 const prompt = page.locator('[data-testid=button-tour-play]');
 if (await prompt.isVisible().catch(() => false)) await prompt.click(); else await page.locator('[data-testid=button-play-tour]').click();

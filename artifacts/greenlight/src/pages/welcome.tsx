@@ -9,12 +9,13 @@ const EXPLAINER = `${import.meta.env.BASE_URL}explainer.mp4`;
 const EXPLAINER_POSTER = `${import.meta.env.BASE_URL}explainer-poster.jpg`;
 
 const STEPS = [
-  ['Start', 'A GitHub link or a zip. Nothing to install.', Braces],
-  ['Results', 'Written rules read the code; every gap shows its evidence.', FileSearch],
-  ['Plan', 'Gaps grouped into waves, biggest wins first.', ListChecks],
-  ['Fixing', 'Claude writes the changes. You approve every file.', Wrench],
-  ['Verified', 'The same rules run again. Lights turn green.', ShieldCheck],
-  ['Sign-off', 'Export the fixed code and the report.', PenLine],
+  ['Your code', 'A GitHub link or a zip. Nothing to install.', Braces],
+  ['Standards', 'Six are chosen for you. Keep them or switch some off.', ListChecks],
+  ["What's wrong", 'Code reads the code. One number, every problem with its evidence.', FileSearch],
+  ['The plan', 'Problems grouped into rounds, biggest wins first.', ListChecks],
+  ['Fixing', 'Claude writes the changes. You approve every one.', Wrench],
+  ['Proof', 'The same code checks again. The number goes up.', ShieldCheck],
+  ['Done', 'Export the fixed code and the report.', PenLine],
 ] as const;
 
 export default function Welcome() {
@@ -41,7 +42,7 @@ export default function Welcome() {
             <div key={title} className="glass welcome-step" data-testid={`tile-step-${i + 1}`}>
               <div className="flex items-center justify-between">
                 <span className="lbl">Step {i + 1}</span>
-                {i === 3 ? <span className="lbl !text-[9px] !text-[#00E5FF]">AI</span> : <span className="lbl !text-[9px]">Code, not AI</span>}
+                {i === 4 ? <span className="lbl !text-[9px] !text-[#00E5FF]">AI</span> : <span className="lbl !text-[9px]">Code, not AI</span>}
               </div>
               <div className="flex items-center gap-2">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border" style={{ borderColor: 'rgba(255,255,255,.4)', background: 'rgba(6,19,26,.5)' }}><Icon size={19} /></span>
@@ -62,7 +63,7 @@ export default function Welcome() {
           </section>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2">
-          <Link href="/start" className="btn btn-primary !px-5 !py-2.5" data-testid="link-start-assessment">Start an assessment <ArrowDownToLine size={15} /></Link>
+          <Link href="/start" className="btn btn-primary !px-5 !py-2.5" data-testid="link-start-assessment">Check my code <ArrowDownToLine size={15} /></Link>
           <button className="btn !px-5 !py-2.5" onClick={() => setWatch(true)} data-testid="button-watch-how"><Play size={15} /> Watch how it works · 1:30</button>
         </div>
         <div className="mx-auto rounded-full border px-3 py-1 lbl !text-[9px]" style={{ borderColor: 'rgba(124,201,232,.25)' }}>DEVELOPED BY DIGITAL DYNAMICS</div>

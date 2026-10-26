@@ -54,10 +54,10 @@ export default function Replay() {
   const demo = (projects.data ?? []).find((p) => p.name.toLowerCase().includes(slug.split('-')[0] || '§')) ?? projects.data?.[0];
   const orbitHref = demo?.latestRunId ? `/verified/${demo.latestRunId}?after=${encodeURIComponent(name)}` : null;
   return (
-    <Shell runMeta={rec ? `${rec.project} · recorded fix` : undefined}>
+    <Shell roadStep={4} runId={demo?.latestRunId} runMeta={rec ? `${rec.project} · recorded fix` : undefined}>
       {state === 'loading' || state === 'idle' ? <div className="flex flex-1 items-center p-8"><Skeleton className="h-full w-full" /></div>
         : state === 'missing' || !rec ? <div className="flex flex-1 flex-col items-center justify-center gap-3"><ErrorBlock message="No recording with that name." /><Link href="/start" className="btn text-xs">Back to start</Link></div>
-          : <FixConsole source={{ kind: 'replay', recording: rec }} project={rec.project} wave={rec.wave} onExit={() => navigate(orbitHref ?? '/start')} exitLabel={orbitHref ? 'See it verified on the orbit' : undefined} />}
+          : <FixConsole source={{ kind: 'replay', recording: rec }} project={rec.project} wave={rec.wave} onExit={() => navigate(orbitHref ?? '/start')} exitLabel={orbitHref ? 'See the proof' : undefined} />}
     </Shell>
   );
 }

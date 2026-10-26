@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { FileText, Rocket, Orbit, Wrench, ListChecks, BadgeCheck, PenLine } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { Show, UserButton } from '@clerk/react';
 import { useListProjects } from '@workspace/api-client-react';
 import { ReportsModal } from '@/components/reports';
@@ -30,25 +30,68 @@ export function Logo() {
   );
 }
 
-/** The six steps of the product, in order. */
+/**
+ * The road: seven stops, in order. Every product screen shows it; the big dot
+ * is where you are, green ticks are where you have been.
+ */
 export const STEPS = [
-  { key: 'start', label: 'Start', icon: Rocket, path: () => '/start' },
-  { key: 'results', label: 'Results', icon: Orbit, path: (rid?: string) => (rid ? `/results/${rid}` : '/start') },
-  { key: 'plan', label: 'Plan', icon: ListChecks, path: (rid?: string) => (rid ? `/plan/${rid}` : '/start') },
-  { key: 'fix', label: 'Fixing', icon: Wrench, path: (rid?: string) => (rid ? `/fix/${rid}` : '/start') },
-  { key: 'verified', label: 'Verified', icon: BadgeCheck, path: (rid?: string) => (rid ? `/verified/${rid}` : '/start') },
-  { key: 'signoff', label: 'Sign-off', icon: PenLine, path: (rid?: string) => (rid ? `/signoff/${rid}` : '/start') },
+  { key: 'start', label: 'Your code', path: () => '/start' },
+  { key: 'standards', label: 'Standards', path: () => '/start/standards' },
+  { key: 'results', label: "What's wrong", path: (rid?: string) => (rid ? `/results/${rid}` : '/start') },
+  { key: 'plan', label: 'The plan', path: (rid?: string) => (rid ? `/plan/${rid}` : '/start') },
+  { key: 'fix', label: 'Fixing', path: (rid?: string) => (rid ? `/fix/${rid}` : '/start') },
+  { key: 'verified', label: 'Proof', path: (rid?: string) => (rid ? `/verified/${rid}` : '/start') },
+  { key: 'signoff', label: 'Done', path: (rid?: string) => (rid ? `/signoff/${rid}` : '/start') },
 ] as const;
+export type StepKey = (typeof STEPS)[number]['key'];
+
+function stepOfPath(path: string): number {
+  if (path === '/' || path === '/start' || path.startsWith('/sign-')) return 0;
+  if (path.startsWith('/start/')) return 1;
+  if (path.startsWith('/results/') || path.startsWith('/orbit/')) return 2;
+  if (path.startsWith('/plan/')) return 3;
+  if (path.startsWith('/fix/') || path.startsWith('/replay')) return 4;
+  if (path.startsWith('/verified/')) return 5;
+  if (path.startsWith('/signoff/')) return 6;
+  return -1;
+}
+
+export function Road({ runId, done, current }: { runId?: string; done?: boolean; current?: number }) {
+  const [path] = useLocation();
+  const now = current ?? stepOfPath(path);
+  return (
+    <nav className={`road ${done ? 'is-done' : ''}`} aria-label="Where you are">
+      {STEPS.map((s, i) => {
+        const state = i === now ? 'now' : done || i < now ? 'ok' : 'todo';
+        const reachable = i <= 1 || !!runId;
+        const inner = (
+          <>
+            <i>{state === 'ok' ? '✓' : i + 1}</i>
+            <span>{s.label}</span>
+          </>
+        );
+        return reachable ? (
+          <Link key={s.key} href={s.path(runId)} className={`stop is-${state}`} aria-current={state === 'now' ? 'step' : undefined} aria-label={`Step ${i + 1}: ${s.label}`} data-testid={`link-footer-${s.key}`} data-tour-target={`nav-${s.key}`}>
+            {inner}
+          </Link>
+        ) : (
+          <span key={s.key} className={`stop is-${state}`} aria-label={`Step ${i + 1}: ${s.label}`} data-testid={`link-footer-${s.key}`}>{inner}</span>
+        );
+      })}
+    </nav>
+  );
+}
 
 export function Shell({
   children,
   runId,
-  bg: _bg = 'graphite',
   chrome = true,
   runMeta,
   tourHeaderHighlight = false,
   guide,
   headerActions,
+  roadDone = false,
+  roadStep,
 }: {
   children: ReactNode;
   runId?: string;
@@ -58,13 +101,15 @@ export function Shell({
   tourHeaderHighlight?: boolean;
   guide?: GuideSpec;
   headerActions?: ReactNode;
+  /** Every stop green (the Done screen). */
+  roadDone?: boolean;
+  /** Force which stop is current (sub-screens of a step). */
+  roadStep?: number;
 }) {
   const [reports, setReports] = useState(false);
   const projects = useListProjects();
   const latest = projects.data?.[0]?.latestRunId;
   const rid = runId ?? latest;
-  const [path] = useLocation();
-  const onStep = (key: string) => (key === 'start' ? path === '/start' || path === '/' : path.startsWith(`/${key}/`) || (key === 'fix' && path.startsWith('/replay')));
   return (
     <div className="app-shell relative flex flex-col">
       <div
@@ -78,7 +123,7 @@ export function Shell({
           {runMeta && <span className="lbl hidden truncate !normal-case !tracking-normal sm:block">{runMeta}</span>}
         </Link>
         <div className="flex min-w-0 items-center justify-end gap-2">
-          <Link href="/how-it-checks" className="lbl rounded-xl border px-3 py-2 hover:text-[#00E5FF]" style={{ borderColor: 'rgba(255,255,255,.45)', background: 'rgba(6,19,26,.5)' }} data-testid="text-checks" data-tour-target="rules-badge" data-tour-highlight={tourHeaderHighlight ? 'true' : undefined} title="How Greenlight checks">
+          <Link href="/how-it-checks" className="lbl rounded-xl border px-3 py-2 hover:text-[#00E5FF]" style={{ borderColor: 'rgba(255,255,255,.2)', background: 'rgba(0,0,0,.28)' }} data-testid="text-checks" data-tour-target="rules-badge" data-tour-highlight={tourHeaderHighlight ? 'true' : undefined} title="How Greenlight checks">
             Checks: code, not AI
           </Link>
           {!runId && <Link href="/start" className="btn !px-3 !py-2" data-testid="link-saved-projects">Saved projects</Link>}
@@ -93,20 +138,9 @@ export function Shell({
           )}
         </div>
       </header>}
+      {chrome && <Road runId={rid} done={roadDone} current={roadStep} />}
       {chrome && guide && <Guide spec={guide} />}
       <main className="app-main relative z-10 flex flex-1 flex-col">{children}</main>
-      {chrome && <nav className="float-nav" aria-label="Main">
-        {STEPS.map(({ key, label, icon: Icon, path: to }, i) => {
-          const on = onStep(key);
-          return (
-            <Link key={key} href={to(rid)} className={`float-nav-btn ${on ? 'is-on' : ''}`} aria-label={`Step ${i + 1}: ${label}`} aria-current={on ? 'page' : undefined} data-testid={`link-footer-${key}`} data-tour-target={`nav-${key}`}>
-              <span className="float-nav-step">Step {i + 1}</span>
-              <Icon size={17} strokeWidth={1.8} />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
-      </nav>}
       {runId && <ReportsModal runId={runId} open={reports} onClose={() => setReports(false)} />}
     </div>
   );

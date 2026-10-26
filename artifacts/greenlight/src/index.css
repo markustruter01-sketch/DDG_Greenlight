@@ -474,7 +474,7 @@ select.field option{background:#0B1F2A}
 .cl-formFieldInput::placeholder{color:#CFE3EE;opacity:.7}
 
 .welcome-layout{width:min(1180px,calc(100% - 40px));height:auto;flex:1;margin:auto;display:flex;flex-direction:column;justify-content:center;gap:14px;min-height:0}
-.welcome-steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.welcome-steps{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
 .welcome-step{min-height:128px;padding:10px;display:flex;flex-direction:column;justify-content:space-between;gap:6px}
 .welcome-proof{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .welcome-card{padding:12px 16px}
@@ -588,7 +588,7 @@ select.field option{background:#0B1F2A}
   .screen-header{margin:6px 8px 0;padding:8px 10px}
   .screen-footer{padding:6px 10px}
   .welcome-layout{width:calc(100% - 24px);gap:8px}
-  .welcome-steps{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .welcome-steps{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
   .welcome-step{min-height:78px;padding:7px}
   .welcome-proof{gap:6px}
   .start-layout{width:calc(100% - 20px);grid-template-columns:1fr;grid-template-rows:minmax(0,1.4fr) minmax(0,.7fr);gap:8px;padding:6px 0}
@@ -840,3 +840,121 @@ body{background:#16181C}
 .orbit-workspace{background:rgba(0,0,0,.22)}
 .glass,.btn,.float-nav-btn,.tp-label,.fc-top,.fc-bar{text-shadow:none}
 .site-loader{background:#16181C}
+
+/* ---- Journey (F series, 26 Oct): the road, one card per screen, one green button ---- */
+.road{flex:none;position:relative;display:flex;justify-content:space-between;align-items:flex-start;margin:10px auto 0;padding:0 28px;width:min(1160px,calc(100% - 48px));z-index:15}
+.road::before{content:"";position:absolute;left:60px;right:60px;top:30px;height:5px;background:rgba(255,255,255,.12);border-radius:3px}
+.road .stop{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;width:130px;color:#8A939B;font-size:13px;text-decoration:none;transition:color .3s}
+.road .stop i{width:44px;height:44px;margin-top:8px;border-radius:50%;background:#23272C;border:3px solid rgba(255,255,255,.18);display:grid;place-items:center;font:700 16px 'Space Grotesk',sans-serif;font-style:normal;color:#DCE3E8;transition:all .35s}
+.road .stop.is-now i{width:60px;height:60px;margin-top:0;background:#007A99;border-color:#00E5FF;box-shadow:0 0 36px rgba(0,229,255,.5);font-size:24px;color:#fff}
+.road .stop.is-now span{color:#F7FBFF;font-weight:600;font-size:14px}
+.road .stop.is-ok i{background:#1E9E62;border-color:#4FD99A;color:#fff}
+.road .stop.is-ok span{color:#DCE3E8}
+.road a.stop:hover i{border-color:#00E5FF}
+.road.is-done::before{background:rgba(79,217,154,.5)}
+.road.is-done .stop.is-now i{background:#1E9E62;border-color:#4FD99A;box-shadow:0 0 44px rgba(79,217,154,.6)}
+@media (max-width:900px){.road{width:calc(100% - 16px);padding:0 4px}.road .stop{width:auto;flex:1}.road .stop span{display:none}.road .stop.is-now span{display:block;font-size:12px}.road::before{left:30px;right:30px}}
+/* The one card */
+.jl{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 24px 20px;width:min(1160px,100%);margin:0 auto}
+.jcard{width:100%;max-height:100%;min-height:0;display:flex;flex-direction:column;gap:18px;padding:30px 44px;overflow:auto}
+.jcard.is-ok{border-color:rgba(79,217,154,.45)}
+.jh{font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-.02em;font-size:40px;line-height:1.05;margin:0;text-wrap:balance}
+.jp{font-size:18px;color:#DCE3E8;margin:0;line-height:1.45}
+.jrow{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.jsplit{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:36px;align-items:center}
+@media (max-width:900px){.jsplit{grid-template-columns:1fr}.jcard{padding:22px 20px}.jh{font-size:30px}}
+.btn-big{font-size:21px;font-weight:600;padding:16px 30px;border-radius:16px;gap:10px}
+.btn-quiet{color:#DCE3E8;font-size:15px;padding:12px 18px;border-radius:14px}
+.jnote{font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:#B9C3CC}
+.jbig{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:104px;line-height:.9;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.jpill{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:8px 14px;font-size:15px;font-weight:600;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.28)}
+.jpill i{width:10px;height:10px;border-radius:50%;flex:none}
+.jbars{display:flex;flex-direction:column;gap:11px}
+.jbar{display:grid;grid-template-columns:190px minmax(0,1fr) 92px;align-items:center;gap:12px;font-size:15px}
+.jbar .track{position:relative;height:12px;border-radius:999px;background:rgba(0,0,0,.4);overflow:hidden}
+.jbar .track i{position:absolute;left:0;top:0;height:100%;border-radius:999px;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.jbar b{font:500 14px 'JetBrains Mono',monospace;text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:640px){.jbar{grid-template-columns:120px minmax(0,1fr) 70px}}
+/* Start: the address field */
+.jfield{display:flex;align-items:center;gap:12px;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:14px 18px;min-width:0}
+.jfield input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:#F7FBFF;font:500 18px 'JetBrains Mono',monospace}
+.jfield input::placeholder{color:#6F7A84}
+.jfield.is-ok{border-color:#00E5FF}
+/* Standards grid */
+.jstd{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;border:1px solid rgba(79,217,154,.45);background:rgba(30,158,98,.14);cursor:pointer;text-align:left;color:#F7FBFF;font:inherit;transition:all .2s}
+.jstd.is-off{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#8A939B}
+.jstd b{display:block;font-size:16px;font-weight:600}
+.jstd small{display:block;font-size:12px;color:#B9C3CC;margin-top:2px}
+.jstd.is-off small{color:#6F7A84}
+.jstd .tick{width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;background:#1E9E62;border:2px solid #4FD99A;font-size:12px}
+.jstd.is-off .tick{background:transparent;border-color:rgba(255,255,255,.25)}
+.jstd .info-btn{margin-left:auto;width:26px;height:26px;font-size:12px}
+.jgrid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:900px){.jgrid3{grid-template-columns:1fr}}
+/* Strictness */
+.jq{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;padding:10px 0;border-top:1px solid rgba(255,255,255,.1)}
+.jq:first-child{border-top:0;padding-top:0}
+.jq b{font-size:17px;font-weight:600;display:block}
+.jq small{font-size:13px;color:#B9C3CC;display:block;margin-top:2px}
+.jq .std{font:500 10px 'JetBrains Mono',monospace;color:#7CC9E8;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
+.seg{display:flex;gap:5px;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:4px;flex-wrap:wrap}
+.seg button{border:0;border-radius:10px;padding:7px 12px;background:transparent;color:#8A939B;font:600 13px Inter,sans-serif;cursor:pointer;min-width:96px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.seg button em{font-style:normal;font:400 10px Inter,sans-serif;color:#6F7A84}
+.seg button.is-on{background:#007A99;color:#F7FBFF;box-shadow:0 0 16px rgba(0,229,255,.35)}
+.seg button.is-on em{color:#CFF4FF}
+/* Plan rounds */
+.jrounds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.jrounds{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.jround{display:flex;flex-direction:column;gap:8px;padding:18px;border-radius:18px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12);text-align:left;color:#F7FBFF;cursor:pointer;font:inherit;transition:all .25s;min-height:0}
+.jround.is-on{border-color:#00E5FF;background:rgba(0,122,153,.22);box-shadow:0 0 30px rgba(0,229,255,.25)}
+.jround.is-done{border-color:rgba(79,217,154,.5)}
+.jround.is-human{border-style:dashed}
+.jround .n{font:700 34px 'Space Grotesk',sans-serif;line-height:1;color:#8A939B}
+.jround.is-on .n{color:#00E5FF}.jround.is-done .n{color:#4FD99A}
+.jround b{font-size:17px;font-weight:600}
+.jround small{font-size:13px;color:#B9C3CC;line-height:1.4;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.jround .to{margin-top:auto;font:600 15px Inter,sans-serif;color:#4FD99A}
+.jpkgs{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow:auto}
+.jpkg{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 12px;border-radius:12px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.1);font-size:14px}
+.jpkg .n{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#00E5FF;color:#06131A;font:700 12px 'JetBrains Mono',monospace}
+/* Approve list */
+.jchg{display:grid;grid-template-columns:28px minmax(0,1fr) minmax(120px,220px) 110px;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.1);font-size:15px}
+.jchg .ok{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;border:2px solid rgba(255,255,255,.25)}
+.jchg.is-on .ok{background:#1E9E62;border-color:#4FD99A}
+.jchg code{font:500 12px 'JetBrains Mono',monospace;color:#B9C3CC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jchg .pm{font:500 13px 'JetBrains Mono',monospace;text-align:right}
+.jchgs{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto;padding-right:4px}
+@media (max-width:640px){.jchg{grid-template-columns:28px minmax(0,1fr) 80px}.jchg code{display:none}}
+/* Fixing: big % and the live strip */
+.jfix{display:grid;grid-template-columns:minmax(0,1.3fr) 280px;gap:30px}
+@media (max-width:900px){.jfix{grid-template-columns:1fr}}
+.jtask{display:flex;align-items:center;gap:12px;font-size:17px;padding:7px 0;color:#DCE3E8}
+.jtask .d{width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:12px;border:2px solid rgba(255,255,255,.2)}
+.jtask.is-done .d{background:#1E9E62;border-color:#4FD99A}
+.jtask.is-now{color:#00E5FF}.jtask.is-now .d{border-color:#00E5FF;box-shadow:0 0 14px rgba(0,229,255,.6)}
+.jtask.is-todo{color:#8A939B}
+.jtile{display:flex;flex-direction:column;gap:3px;padding:12px 16px;border-radius:14px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12)}
+.jtile b{font:700 28px 'Space Grotesk',sans-serif;line-height:1;font-variant-numeric:tabular-nums}
+.jtile span{font-size:13px;color:#B9C3CC}
+/* Fix console: the percentage is the headline */
+.fc-pct{font-size:44px;min-width:110px}
+.fc-pct small{font-size:20px}
+/* Orbit screen: controls above, pop-up over */
+.jorbit{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;width:min(1400px,calc(100% - 48px));margin:0 auto;padding:8px 0 16px}
+.jorbit-bar{flex:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px}
+.jorbit-stage{position:relative;flex:1;min-height:0;overflow:hidden}
+.jpop{position:absolute;right:16px;top:16px;bottom:16px;width:min(420px,calc(100% - 32px));z-index:40;display:flex;flex-direction:column;overflow:hidden;animation:tour-cap-in .35s ease-out}
+.jpop-body{flex:1;min-height:0;overflow:auto;padding:0 2px}
+.jorbit .orbit-view-root{flex-direction:column-reverse}
+.jorbit .orbit-controls-row{border-top:0;border-bottom:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.28)}
+.jwhat{position:absolute;left:16px;bottom:16px;z-index:30}
+/* Done */
+.jout{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:14px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12);font-size:15px;color:#DCE3E8;text-decoration:none;text-align:left;font-family:inherit;cursor:pointer}
+.jout:hover{border-color:#00E5FF;color:#F7FBFF}
+.jout:disabled{opacity:.45;cursor:not-allowed}
+.jout svg{flex:none}
+.jfixed{display:flex;flex-direction:column;gap:0;max-height:60vh;overflow:auto;border-radius:12px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.1)}
+/* Compact guide line under the road */
+.guide{margin:8px auto 0;width:min(1160px,calc(100% - 48px));padding:6px 12px}
+.guide-step.guide-next{opacity:.55}
+.guide-hide{font-size:10px}

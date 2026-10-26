@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearch } from 'wouter';
-import { FileCheck2, GitPullRequest, Package, PenLine } from 'lucide-react';
+import { ArrowRight, FileCheck2, GitPullRequest, Orbit as OrbitIcon, Package } from 'lucide-react';
 import { getGetAssessmentQueryKey, useGetAssessment } from '@workspace/api-client-react';
 import { Shell, DEMO_RECORDING, DEMO_WAVES } from '@/components/shell';
 import { WaveSwitch } from '@/components/wave-switch';
 import { ErrorBlock, Skeleton } from '@/components/gl';
-import { OrbitView } from '@/components/orbit-view';
 import { useAfter } from '@/lib/after';
 import { download, reportUrl, tally } from '@/lib/greenlight';
+import { plainName } from '@/lib/standard-info';
 import { fmtClock } from '@/lib/fix-events';
 
+const colorFor = (v: number) => (v < 40 ? '#FF5C6E' : v < 75 ? '#FFA62B' : '#4FD99A');
+
 /**
- * Step 5 · Verified: before → after, measured by the same rules. The orbit
- * shows the baseline for a moment, then the clauses the fix closed turn green.
+ * Step 6 · Proof: before → after, measured by the same rules. The bars grow
+ * from the old number to the new one a moment after the screen opens.
  */
 export default function Verified() {
   const { id = '' } = useParams<{ id: string }>();
@@ -22,98 +24,76 @@ export default function Verified() {
   const after = useAfter(run, search);
   const afterParam = useMemo(() => new URLSearchParams(search).get('after'), [search]);
   const lastRec = afterParam ? DEMO_WAVES.find((w) => w.name === afterParam.split(',').pop()) : undefined;
-  const [showAfter, setShowAfter] = useState(true);
   const [applied, setApplied] = useState(false);
-  const [picked, setPicked] = useState<string | null>(null);
   useEffect(() => {
     if (after.mode == null || after.loading) return;
-    const t = window.setTimeout(() => setApplied(true), 1400);
+    const t = window.setTimeout(() => setApplied(true), 600);
     return () => clearTimeout(t);
   }, [after.mode, after.loading]);
-  const statuses = showAfter && applied ? after.statusesAfter : after.statusesBefore;
   const counts = useMemo(() => (run ? tally(run, after.statusesAfter) : null), [run, after.statusesAfter]);
   const greened = after.changedKeys.filter((k) => /^(L|C)$/.test(after.statusesAfter[k] ?? '')).length;
   const noSource = run && after.mode == null;
-  const nextWave = run?.waves.find((w) => w.number > after.wave && w.fixCount > 0);
+  const keys = Object.keys(after.readinessAfter);
+  const avg = (m: Record<string, number>) => Math.round(keys.reduce((n, k) => n + (m[k] ?? 0), 0) / Math.max(1, keys.length));
+  const before = avg(after.readinessBefore), now = avg(after.readinessAfter);
+  const idOf = (short: string) => run?.standards.find((s) => s.short === short)?.id ?? short;
+  const orbitHref = `/orbit/${id}${afterParam ? `?after=${encodeURIComponent(afterParam.split(',').pop() ?? '')}` : ''}`;
 
   const guide = {
-    steps: [
-      after.mode === 'recording' ? 'This is the recorded run. The orbit turns green where the fix closed a clause.' : 'Open the pull request and merge it when your team is happy. Greenlight never merges for you.',
-      'Download the verification report for your assurance file',
-      'Go to Step 6 to sign the wave off',
-    ],
+    steps: [after.mode === 'recording' ? 'This is the recorded run. The number is measured by the same code that found the problems.' : 'Open the pull request and merge it when your team is happy. Nothing is merged for you.', 'Press Sign it off'],
     current: 0,
     tone: 'ok' as const,
   };
 
   return (
-    <Shell runId={id} guide={run && !noSource ? guide : undefined} runMeta={run ? `${run.projectName} · wave ${after.wave || ''} verified` : undefined}>
-      {q.isLoading || after.loading ? <div className="flex flex-1 items-center p-8"><Skeleton className="h-full w-full" /></div> : q.isError || !run ? <div className="flex flex-1 items-center justify-center"><ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /></div> : noSource ? (
-        <div className="plan-layout" style={{ gridTemplateColumns: 'minmax(0,720px)' }}>
-          <section className="glass plan-main">
-            <div className="lbl">Step 5 of 6 · Verified</div>
-            <h1 className="font-head text-3xl font-semibold">Nothing verified yet</h1>
-            <div className="ink p-4 text-sm leading-relaxed" style={{ color: '#EAF3F8' }}>
-              <p>A wave is verified when Claude's changes have been approved and the same written rules have checked the fixed code again. That has not happened for this assessment.</p>
-              <p className="mt-2">Start from <Link href={`/plan/${id}`} className="underline" style={{ color: '#00E5FF' }}>Step 3 · Plan</Link>, or see what a verified wave looks like with <Link href={`/verified/${id}?after=${DEMO_RECORDING}`} className="underline" style={{ color: '#00E5FF' }}>the recorded fix</Link>.</p>
-            </div>
+    <Shell runId={id} guide={run && !noSource ? guide : undefined} runMeta={run ? `${run.projectName} · proof` : undefined}>
+      <div className="jl">
+        {q.isLoading || after.loading ? <Skeleton className="h-80 w-full" /> : q.isError || !run ? <ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /> : noSource ? (
+          <section className="glass jcard" data-testid="screen-proof-empty">
+            <h1 className="jh">Nothing to prove yet.</h1>
+            <p className="jp">A round is proven when its changes have been kept and the same written rules have checked the fixed code again. That has not happened for this project yet.</p>
+            <div className="flex flex-wrap gap-3"><Link href={`/plan/${id}`} className="btn btn-go btn-big" data-testid="link-plan">Go to the plan <ArrowRight size={20} /></Link><Link href={`/verified/${id}?after=${DEMO_RECORDING}`} className="btn btn-quiet" data-testid="link-recorded-proof">See the recorded proof</Link></div>
           </section>
-        </div>
-      ) : (
-        <div className="ver-layout">
-          <section className="glass ver-col">
-            <div className="lbl">Step 5 of 6 · Before → after, measured</div>
-            <WaveSwitch page="verified" runId={id} after={afterParam} />
-            {Object.keys(after.readinessAfter).map((k) => {
-              const b = after.readinessBefore[k] ?? 0, a = after.readinessAfter[k] ?? b;
-              const ceil = Math.max(a, Math.round(((run.waves[run.waves.length - 1]?.readiness ?? {})[run.standards.find((s) => s.short === k)?.id ?? ''] ?? 0) * 100));
-              return (
-                <div key={k} className="ink p-3" data-testid={`after-${k}`}>
-                  <div className="lbl !text-[10px]">{k}</div>
-                  <div className="mt-1 flex items-baseline gap-2"><span className="big" style={{ fontSize: 28, color: '#EAF3F8' }}>{b}%</span><span className="text-xl">→</span><span className="big" style={{ color: a > b ? '#4FD99A' : '#F7FBFF' }}>{a}%</span></div>
-                  <div className="bar mt-2"><i style={{ width: `${a}%`, background: '#4FD99A' }} />{ceil > a && <span className="tick" style={{ left: `${ceil}%` }} title={`Code can reach ${ceil}%`} />}</div>
-                  <div className="lbl mt-1.5 !text-[9px]">{a > b ? `+${a - b} points` : 'No change'}{ceil > a ? ` · code can reach ${ceil}% · the rest is process evidence` : ''}</div>
+        ) : (
+          <section className="glass jcard is-ok" data-testid="screen-proof">
+            <div className="jsplit">
+              <div className="flex min-w-0 flex-col gap-3">
+                <span className="jnote">Checked again by the same code{after.durationMs ? ` · fix took ${fmtClock(after.durationMs)}` : ''}</span>
+                <h1 className="jh">Checked again. Proven.</h1>
+                <div className="flex items-center gap-4"><span className="jbig" style={{ color: '#8A939B', fontSize: 84 }} data-testid="text-before">{before}%</span><span style={{ fontSize: 40, color: '#4FD99A' }}>→</span><span className="jbig" style={{ color: colorFor(now), fontSize: 84 }} data-testid="text-after">{applied ? now : before}%</span></div>
+                <p className="jp" data-testid="text-proof-summary">{greened} problem{greened === 1 ? '' : 's'} gone{counts ? ` · ${counts.unanswered} need your answers` : ''}{after.tests ? ` · ${after.tests.pass.toLocaleString()} of ${after.tests.total.toLocaleString()} tests pass` : ''}{after.filesChanged ? ` · ${after.filesChanged} files` : ''}</p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link href={`/signoff/${id}${search}`} className="btn btn-go btn-big" data-testid="link-signoff">Sign it off <ArrowRight size={20} /></Link>
+                  <Link href={orbitHref} className="btn btn-quiet" data-testid="link-before-after"><OrbitIcon size={15} /> Before and after on the planet</Link>
                 </div>
-              );
-            })}
-            <div className="ink mt-auto p-3 text-xs leading-relaxed" style={{ color: '#EAF3F8' }}>
-              <b style={{ color: '#4FD99A' }}>{greened}</b> clause{greened === 1 ? '' : 's'} turned green · {after.filesChanged} files changed · <b style={{ color: '#4FD99A' }}>+{after.linesAdded.toLocaleString()}</b> / <b style={{ color: '#FF8C9A' }}>−{after.linesRemoved.toLocaleString()}</b> lines{after.tests ? ` · ${after.tests.pass} of ${after.tests.total} tests pass` : ''}{after.durationMs ? ` · ${fmtClock(after.durationMs)}` : ''}{after.costUsd != null ? ` · $${after.costUsd.toFixed(2)}` : ''}
-              <br />{after.verdictBefore} → <b style={{ color: /ready|clear/i.test(after.verdictAfter) && !/not/i.test(after.verdictAfter) ? '#4FD99A' : '#F7FBFF' }}>{after.verdictAfter}</b>{counts ? ` · ${counts.blocking} must-fix left for the next waves` : ''}
+                <div className="flex flex-wrap gap-2">
+                  {after.mode === 'fix' ? (
+                    <>
+                      {after.pullRequestUrl && <a className="btn btn-quiet" href={after.pullRequestUrl} target="_blank" rel="noreferrer" data-testid="button-review-pr"><GitPullRequest size={15} /> The pull request</a>}
+                      {after.downloadUrl && <button className="btn btn-quiet" onClick={() => after.downloadUrl && download(after.downloadUrl)} data-testid="button-fixed-code"><Package size={15} /> Fixed code (.zip)</button>}
+                      {after.verificationPdfUrl && <button className="btn btn-quiet" onClick={() => after.verificationPdfUrl && download(reportUrl(after.verificationPdfUrl, 'pdf'))} data-testid="button-verification-report"><FileCheck2 size={15} /> Verification report (PDF)</button>}
+                    </>
+                  ) : lastRec?.pullRequest ? <a className="btn btn-quiet" href={lastRec.pullRequest} target="_blank" rel="noreferrer" data-testid="button-review-pr"><GitPullRequest size={15} /> The pull request for round {lastRec.wave}</a> : null}
+                </div>
+              </div>
+              <div className="jbars">
+                <div className="flex flex-wrap items-center justify-between gap-2"><span className="jnote">Per standard · before → after</span><WaveSwitch page="verified" runId={id} after={afterParam} /></div>
+                {keys.map((k) => {
+                  const b = after.readinessBefore[k] ?? 0, a = after.readinessAfter[k] ?? b;
+                  return (
+                    <div key={k} className="jbar" data-testid={`after-${k}`}>
+                      <span className="truncate">{plainName(idOf(k), k)}</span>
+                      <div className="track"><i style={{ width: `${applied ? a : b}%`, background: colorFor(applied ? a : b) }} /><i style={{ width: `${Math.min(a, b)}%`, background: 'rgba(255,255,255,.3)' }} /></div>
+                      <b>{b} → <span style={{ color: a > b ? '#4FD99A' : '#F7FBFF' }}>{a}</span></b>
+                    </div>
+                  );
+                })}
+                <span className="jnote">Grey = before · colour = now · the rest needs a person, not code</span>
+              </div>
             </div>
           </section>
-
-          <section className="glass relative overflow-hidden" style={{ minHeight: 0 }}>
-            <div className="absolute left-4 top-3 z-10 lbl">{after.mode === 'recording' ? 'After-fix orbit · recorded run' : 'After-fix orbit · measured'}</div>
-            <div className="absolute right-3 top-3 z-10 flex gap-1.5">
-              <button className={`btn !px-3 !py-1.5 text-xs ${showAfter ? '' : 'fc-on'}`} onClick={() => setShowAfter(false)} data-testid="button-show-before">Before</button>
-              <button className={`btn !px-3 !py-1.5 text-xs ${showAfter ? 'fc-on' : ''}`} onClick={() => { setShowAfter(true); setApplied(true); }} data-testid="button-show-after">After</button>
-            </div>
-            <div className="h-full w-full"><OrbitView run={run} statuses={statuses} selected={picked} onPick={setPicked} /></div>
-          </section>
-
-          <aside className="glass ver-col">
-            <div className="lbl">Your outputs</div>
-            {after.mode === 'fix' ? (
-              <>
-                <a className={`btn btn-primary justify-center !py-3.5 text-base ${after.pullRequestUrl ? '' : 'pointer-events-none opacity-40'}`} href={after.pullRequestUrl ?? undefined} target="_blank" rel="noreferrer" aria-disabled={!after.pullRequestUrl} data-testid="button-review-pr"><GitPullRequest size={16} /> Review the pull request</a>
-                <button className="btn justify-center" disabled={!after.downloadUrl} onClick={() => after.downloadUrl && download(after.downloadUrl)} data-testid="button-fixed-code"><Package size={15} /> Fixed code (.zip)</button>
-                <button className="btn justify-center" disabled={!after.verificationPdfUrl} onClick={() => after.verificationPdfUrl && download(reportUrl(after.verificationPdfUrl, 'pdf'))} data-testid="button-verification-report"><FileCheck2 size={15} /> Verification report (PDF)</button>
-              </>
-            ) : (
-              <>
-                {lastRec?.pullRequest && <a className="btn btn-primary justify-center !py-3.5 text-base" href={lastRec.pullRequest} target="_blank" rel="noreferrer" data-testid="button-review-pr"><GitPullRequest size={16} /> Review the pull request</a>}
-                <div className="ink p-3 text-xs leading-relaxed" style={{ color: '#EAF3F8' }}><span className="lbl !text-[#FFA62B]">Recorded session</span><br />{lastRec?.pullRequest ? 'The pull request above holds exactly the files this session changed, opened on the real repository. ' : ''}On a live run this panel also holds the fixed code as a zip and the signed verification report. <Link href={`/replay/${lastRec?.name ?? DEMO_RECORDING}`} className="underline" style={{ color: '#00E5FF' }}>Replay the session</Link>.</div>
-              </>
-            )}
-            <div className="ink p-3 text-xs leading-relaxed" style={{ color: '#EAF3F8' }}><span className="lbl !text-[#4FD99A]">What the report says</span><br />Every requirement that changed, the rule that re-checked it, the file and line, and the commit. Signed by the engine version, not by a model.</div>
-            <div className="ink mt-auto flex flex-col gap-2 p-3" style={{ borderColor: 'rgba(0,229,255,.5)' }}>
-              <span className="lbl !text-[#00E5FF]">Next</span>
-              <Link href={`/signoff/${id}${search}`} className="btn btn-go justify-center !py-3 text-base" data-testid="link-signoff"><PenLine size={16} /> Sign this wave off</Link>
-              {nextWave && <Link href={`/plan/${id}`} className="btn justify-center text-xs" data-testid="link-next-wave">Then wave {nextWave.number} · {nextWave.fixCount} fixes</Link>}
-            </div>
-          </aside>
-        </div>
-      )}
+        )}
+      </div>
     </Shell>
   );
 }

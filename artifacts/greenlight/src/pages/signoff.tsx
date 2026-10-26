@@ -1,17 +1,18 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams, useSearch } from 'wouter';
-import { Check, Download, FileCheck2, GitPullRequest, Home, Package } from 'lucide-react';
-import { getGetAssessmentQueryKey, useGetAssessment } from '@workspace/api-client-react';
+import { ArrowRight, Download, FileCheck2, FileSpreadsheet, GitPullRequest, Package, Table2 } from 'lucide-react';
+import { getGetAssessmentQueryKey, getListReportsQueryKey, useGetAssessment, useListReports } from '@workspace/api-client-react';
 import { Shell, DEMO_RECORDING, DEMO_WAVES } from '@/components/shell';
 import { WaveSwitch } from '@/components/wave-switch';
 import { ErrorBlock, Modal, Skeleton } from '@/components/gl';
 import { useAfter } from '@/lib/after';
 import { STATUS_WORD, download, reportUrl } from '@/lib/greenlight';
+import { plainName } from '@/lib/standard-info';
 import { fmtClock } from '@/lib/fix-events';
 
 /**
- * Step 6 · Sign-off: the feel-good page. Final percentages for every
- * standard, everything that was fixed, one Export button, back to start.
+ * Step 7 · Done: the number, everything that was fixed, and what you can take
+ * away: pull requests, the zip, the report, the clause-by-clause sheet.
  */
 export default function Signoff() {
   const { id = '' } = useParams<{ id: string }>();
@@ -19,118 +20,92 @@ export default function Signoff() {
   const q = useGetAssessment(id, { query: { enabled: !!id, queryKey: getGetAssessmentQueryKey(id) } });
   const run = q.data;
   const after = useAfter(run, search);
+  const reports = useListReports(id, { query: { enabled: !!id, queryKey: getListReportsQueryKey(id) } });
   const afterParam = useMemo(() => new URLSearchParams(search).get('after'), [search]);
   const recWaves = afterParam ? DEMO_WAVES.filter((w) => afterParam.split(',').includes(w.name)) : [];
   const [exportOpen, setExportOpen] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
   const changed = useMemo(() => {
     if (!run) return [];
     const by = new Map(run.findings.map((f) => [f.key, f]));
     return after.changedKeys.map((k) => ({ key: k, f: by.get(k), to: after.statusesAfter[k] })).filter((x) => x.f);
   }, [run, after.changedKeys, after.statusesAfter]);
   const greened = changed.filter((x) => /^(L|C)$/.test(x.to ?? '')).length;
-  const overallBefore = run ? Math.round(Object.values(after.readinessBefore).reduce((n, v) => n + v, 0) / Math.max(1, Object.keys(after.readinessBefore).length)) : 0;
-  const overallAfter = run ? Math.round(Object.values(after.readinessAfter).reduce((n, v) => n + v, 0) / Math.max(1, Object.keys(after.readinessAfter).length)) : 0;
+  const keys = Object.keys(after.readinessAfter);
+  const avg = (m: Record<string, number>) => Math.round(keys.reduce((n, v) => n + (m[v] ?? 0), 0) / Math.max(1, keys.length));
+  const before = avg(after.readinessBefore), now = avg(after.readinessAfter);
+  const left = run ? run.findings.filter((f) => f.status === 'UN').length : 0;
   const nextWave = run?.waves.find((w) => w.number > after.wave && w.fixCount > 0);
   const noSource = run && after.mode == null;
+  const idOf = (short: string) => run?.standards.find((s) => s.short === short)?.id ?? short;
+  const report = (fmt: string) => { const all = (reports.data ?? []).filter((r) => r.formats.includes(fmt)); return all.find((r) => r.kind === 'verification') ?? all.find((r) => r.kind === 'findings') ?? all[0]; };
+  const prs = after.mode === 'fix' ? (after.pullRequestUrl ? [{ wave: after.wave, url: after.pullRequestUrl }] : []) : recWaves.filter((w) => w.pullRequest).map((w) => ({ wave: w.wave, url: w.pullRequest! }));
 
-  const guide = {
-    steps: ["Export the fixed code. That's the whole job done.", nextWave ? `Come back for wave ${nextWave.number} whenever you're ready` : 'Every wave is done'],
-    current: 0,
-    tone: 'ok' as const,
-  };
+  const guide = { steps: ['Export the fixed code. That is the whole job done.', nextWave ? `Come back for round ${nextWave.number} whenever you are ready` : 'Every round is done'], current: 0, tone: 'ok' as const };
 
   return (
-    <Shell runId={id} guide={run && !noSource ? guide : undefined} runMeta={run ? `${run.projectName} · wave ${after.wave || ''} sign-off` : undefined}>
-      {q.isLoading || after.loading ? <div className="flex flex-1 items-center p-8"><Skeleton className="h-full w-full" /></div> : q.isError || !run ? <div className="flex flex-1 items-center justify-center"><ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /></div> : noSource ? (
-        <div className="plan-layout" style={{ gridTemplateColumns: 'minmax(0,720px)' }}>
-          <section className="glass plan-main">
-            <div className="lbl">Step 6 of 6 · Sign-off</div>
-            <h1 className="font-head text-3xl font-semibold">Nothing to sign off yet</h1>
-            <div className="ink p-4 text-sm leading-relaxed" style={{ color: '#EAF3F8' }}>
-              <p>This page appears once a wave has been fixed and verified. Start from <Link href={`/plan/${id}`} className="underline" style={{ color: '#00E5FF' }}>Step 3 · Plan</Link>, or see it with <Link href={`/signoff/${id}?after=${DEMO_RECORDING}`} className="underline" style={{ color: '#00E5FF' }}>the recorded fix</Link>.</p>
-            </div>
+    <Shell runId={id} guide={run && !noSource ? guide : undefined} roadDone={!!run && !noSource} runMeta={run ? `${run.projectName} · done` : undefined}>
+      <div className="jl">
+        {q.isLoading || after.loading ? <Skeleton className="h-80 w-full" /> : q.isError || !run ? <ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /> : noSource ? (
+          <section className="glass jcard" data-testid="screen-done-empty">
+            <h1 className="jh">Nothing to sign off yet.</h1>
+            <p className="jp">This screen appears once a round has been fixed and proven. Start from the plan, or see it with the recorded fix.</p>
+            <div className="flex flex-wrap gap-3"><Link href={`/plan/${id}`} className="btn btn-go btn-big" data-testid="link-plan">Go to the plan <ArrowRight size={20} /></Link><Link href={`/signoff/${id}?after=${DEMO_RECORDING}`} className="btn btn-quiet" data-testid="link-recorded-signoff">See the recorded sign-off</Link></div>
           </section>
-        </div>
-      ) : (
-        <div className="sign-layout">
-          <section className="glass plan-main" style={{ borderColor: 'rgba(79,217,154,.6)', boxShadow: '0 8px 32px rgba(0,0,0,.35), 0 0 60px rgba(79,217,154,.18)' }}>
-            <div className="flex items-center gap-3">
-              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full border-2" style={{ background: '#1E9E62', borderColor: '#4FD99A', boxShadow: '0 0 30px rgba(79,217,154,.6)' }}><Check size={28} /></span>
-              <div><div className="lbl !text-[#4FD99A]">Step 6 of 6 · Signed off</div><h1 className="font-head mt-1 text-3xl font-bold leading-tight">{recWaves.length > 1 ? `Waves ${recWaves[0].wave}–${recWaves[recWaves.length - 1].wave} are fixed and proven.` : `Wave ${after.wave} is fixed and proven.`}</h1></div>
-            </div>
-            <WaveSwitch page="signoff" runId={id} after={afterParam} />
-            <p className="ink p-3 text-sm leading-relaxed" style={{ color: '#EAF3F8' }}>
-              {greened} requirement{greened === 1 ? '' : 's'} went from red or amber to green. Every one was re-checked by the same written rules that found it, on the fixed code{after.tests ? `, with ${after.tests.pass} of ${after.tests.total} tests passing` : ''}. Nothing was merged for you.
-            </p>
-            <div className="ink flex flex-col gap-2.5 p-3.5">
-              <div className="lbl !text-[10px]">Final readiness · wave {after.wave}</div>
-              {Object.keys(after.readinessAfter).map((k) => {
-                const b = after.readinessBefore[k] ?? 0, a = after.readinessAfter[k] ?? b;
-                return (
-                  <div key={k} className="grid items-center gap-3 text-sm" style={{ gridTemplateColumns: '130px minmax(0,1fr) 110px' }} data-testid={`final-${k}`}>
-                    <span className="font-head font-semibold">{k}</span>
-                    <div className="bar" style={{ overflow: 'hidden' }}><i style={{ width: `${a}%`, background: a > b ? '#4FD99A' : '#7CC9E8' }} /></div>
-                    <span className="text-right font-mono tabular">{b} → <b style={{ color: a > b ? '#4FD99A' : '#F7FBFF' }}>{a}%</b></span>
+        ) : (
+          <section className="glass jcard is-ok" style={{ boxShadow: '0 20px 60px rgba(0,0,0,.35), 0 0 60px rgba(79,217,154,.15)' }} data-testid="screen-done">
+            <div className="jsplit" style={{ gridTemplateColumns: 'minmax(0,1.2fr) minmax(0,1fr)' }}>
+              <div className="flex min-w-0 flex-col gap-3">
+                <h1 className="jh" style={{ fontSize: 48 }}>You made it.</h1>
+                <p className="jp" data-testid="text-done-summary">{run.projectName} went from <b style={{ color: '#8A939B' }}>{before}%</b> to <b style={{ color: '#4FD99A' }}>{now}%</b>. {greened} fix{greened === 1 ? '' : 'es'}, every one checked by code and approved by you.{left ? ` The last ${left} are questions only your team can answer.` : ''}</p>
+                <WaveSwitch page="signoff" runId={id} after={afterParam} />
+                <div className="flex flex-col items-start gap-3">
+                  <button className="btn btn-go btn-big" style={{ fontSize: 24, padding: '20px 36px' }} onClick={() => setExportOpen(true)} data-testid="button-export"><Download size={22} /> Export the fixed code</button>
+                  <div className="flex flex-wrap gap-2">
+                    {left > 0 && <Link href={`/orbit/${id}`} className="btn btn-quiet" data-testid="link-answers">Answer the {left}</Link>}
+                    <button className="btn btn-quiet" onClick={() => setListOpen(true)} data-testid="button-fixed-list"><Table2 size={15} /> Everything that was fixed</button>
+                    {nextWave && <Link href={`/plan/${id}`} className="btn btn-quiet" data-testid="link-next-wave">Round {nextWave.number} next · {nextWave.fixCount} fixes</Link>}
+                    <Link href="/start" className="btn btn-quiet" data-testid="link-back-start">Start again</Link>
                   </div>
-                );
-              })}
-              <div className="flex items-center justify-between border-t pt-2 text-sm" style={{ borderColor: 'rgba(255,255,255,.15)' }}><span className="font-head font-semibold">Overall</span><span className="font-mono tabular">{overallBefore}% → <b style={{ color: '#4FD99A', fontSize: 17 }}>{overallAfter}%</b></span></div>
-            </div>
-            <div className="mt-auto flex flex-col gap-2">
-              <button className="btn btn-go justify-center !py-4 text-lg font-semibold" onClick={() => setExportOpen(true)} data-testid="button-export"><Download size={18} /> Export the fixed code</button>
-              <span className="lbl text-center !text-[9px]">Pull request on GitHub · or a .zip of the fixed repository</span>
-              <div className="flex gap-2">
-                <button className="btn flex-1 justify-center text-xs" disabled={!after.verificationPdfUrl} onClick={() => after.verificationPdfUrl && download(reportUrl(after.verificationPdfUrl, 'pdf'))} data-testid="button-verification-report"><FileCheck2 size={14} /> Verification report (PDF)</button>
-                <Link href="/start" className="btn flex-1 justify-center text-xs" data-testid="link-back-start"><Home size={14} /> Back to start</Link>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2.5">
+                <span className="jnote">What you can take away</span>
+                {prs.map((p) => <a key={p.url} className="jout" href={p.url} target="_blank" rel="noreferrer" data-testid={`link-pr-${p.wave}`}><GitPullRequest size={18} style={{ color: '#4FD99A' }} /> Round {p.wave} as a pull request on your GitHub</a>)}
+                {!prs.length && <span className="jout" style={{ opacity: .6 }}><GitPullRequest size={18} /> No pull request for this run</span>}
+                <button className="jout" disabled={!after.downloadUrl} onClick={() => after.downloadUrl && download(after.downloadUrl)} data-testid="button-export-zip"><Package size={18} style={{ color: '#7CC9E8' }} /> The fixed code as a zip{after.downloadUrl ? '' : ' · live runs only'}</button>
+                <button className="jout" disabled={!after.verificationPdfUrl && !report('pdf')} onClick={() => { const u = after.verificationPdfUrl ?? report('pdf')?.url; if (u) download(reportUrl(u, 'pdf')); }} data-testid="button-verification-report"><FileCheck2 size={18} style={{ color: '#FFA62B' }} /> The report for your assurance team (PDF)</button>
+                <button className="jout" disabled={!report('xlsx')} onClick={() => { const r = report('xlsx'); if (r) download(reportUrl(r.url, 'xlsx')); }} data-testid="button-trace-sheet"><FileSpreadsheet size={18} style={{ color: '#B9C3CC' }} /> Every check, clause by clause, as a spreadsheet</button>
+                <span className="jnote" style={{ marginTop: 6 }}>{after.filesChanged} files · <span style={{ color: '#4FD99A' }}>+{after.linesAdded.toLocaleString()}</span> / <span style={{ color: '#FF8C9A' }}>−{after.linesRemoved.toLocaleString()}</span>{after.tests ? ` · ${after.tests.pass.toLocaleString()} / ${after.tests.total.toLocaleString()} tests` : ''}{after.durationMs ? ` · ${fmtClock(after.durationMs)}` : ''}{after.costUsd != null ? ` · $${after.costUsd.toFixed(2)}` : ''}</span>
               </div>
             </div>
           </section>
-
-          <section className="glass plan-main">
-            <div className="flex flex-wrap items-baseline justify-between gap-2"><span className="font-head text-lg font-semibold">Everything that was fixed</span><span className="lbl">{changed.length} requirement{changed.length === 1 ? '' : 's'} · {after.filesChanged} files</span></div>
-            <div className="ink plan-list !gap-0 px-1.5 py-1" data-testid="fixed-list">
-              <div className="sign-row lbl !text-[9px]"><span /><span>Requirement</span><span>What it asks for</span><span className="text-right">Now</span></div>
-              {changed.map(({ key, f, to }) => {
-                const ok = /^(L|C)$/.test(to ?? '');
-                return (
-                  <div key={key} className="sign-row" data-testid={`fixed-${key}`}>
-                    <span style={{ color: ok ? '#4FD99A' : '#FFA62B' }}>{ok ? '✓' : '◐'}</span>
-                    <span className="id">{f!.standardShort} {f!.id}</span>
-                    <span className="truncate" title={f!.title}>{f!.title}</span>
-                    <span className="text-right" style={{ color: ok ? '#4FD99A' : '#FFA62B' }}>{STATUS_WORD[to ?? ''] ?? to}</span>
-                  </div>
-                );
-              })}
-              {!changed.length && <div className="sign-row" style={{ borderBottom: 0 }}><span /><span className="id">—</span><span style={{ color: '#B9DCEA' }}>No requirement changed status in this wave.</span><span /></div>}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <span className="ink px-3 py-2 text-xs"><b style={{ color: '#4FD99A' }}>+{after.linesAdded.toLocaleString()}</b> lines added</span>
-              <span className="ink px-3 py-2 text-xs"><b style={{ color: '#FF8C9A' }}>−{after.linesRemoved.toLocaleString()}</b> removed</span>
-              <span className="ink px-3 py-2 text-xs"><b>{after.filesChanged}</b> files changed</span>
-              {after.tests && <span className="ink px-3 py-2 text-xs"><b>{after.tests.pass.toLocaleString()} / {after.tests.total.toLocaleString()}</b> tests pass</span>}
-              {(after.durationMs || after.costUsd != null) && <span className="ink px-3 py-2 text-xs">{after.durationMs ? <b>{fmtClock(after.durationMs)}</b> : null}{after.durationMs && after.costUsd != null ? ' · ' : ''}{after.costUsd != null ? <b>${after.costUsd.toFixed(2)}</b> : null}</span>}
-              {nextWave && <Link href={`/plan/${id}`} className="ink ml-auto px-3 py-2 text-xs" style={{ borderColor: 'rgba(0,229,255,.5)' }} data-testid="link-next-wave">Next · <b style={{ color: '#00E5FF' }}>Wave {nextWave.number}</b> · {nextWave.fixCount} fixes</Link>}
-            </div>
-          </section>
-        </div>
-      )}
+        )}
+      </div>
 
       <Modal open={exportOpen} onClose={() => setExportOpen(false)} title="Export the fixed code">
         <div className="space-y-2">
-          {after.mode === 'fix' ? (
-            <>
-              <a className={`btn btn-primary w-full justify-center !py-3 ${after.pullRequestUrl ? '' : 'pointer-events-none opacity-40'}`} href={after.pullRequestUrl ?? undefined} target="_blank" rel="noreferrer" data-testid="button-export-pr"><GitPullRequest size={16} /> Open the pull request on GitHub</a>
-              <button className="btn w-full justify-center !py-3" disabled={!after.downloadUrl} onClick={() => after.downloadUrl && download(after.downloadUrl)} data-testid="button-export-zip"><Package size={16} /> Download the fixed repository (.zip)</button>
-              <p className="ink p-3 text-xs leading-relaxed" style={{ color: '#EAF3F8' }}>The pull request contains only the files you approved. Greenlight never merges; your team reviews and merges it.</p>
-            </>
-          ) : (
-            <>
-              {recWaves.filter((w) => w.pullRequest).map((w) => (
-                <a key={w.name} className="btn btn-primary w-full justify-center !py-3" href={w.pullRequest} target="_blank" rel="noreferrer" data-testid={`button-export-pr-${w.wave}`}><GitPullRequest size={16} /> Wave {w.wave} · open the pull request on GitHub</a>
-              ))}
-              <p className="ink p-3 text-sm leading-relaxed" style={{ color: '#EAF3F8' }}>{recWaves.some((w) => w.pullRequest) ? 'Each pull request holds exactly the files that wave changed, opened on the real repository and never merged by Greenlight. ' : 'This is the recorded session, so there is no pull request to open. '}On a live run this button also downloads the fixed repository as a zip. <Link href={`/replay/${recWaves[recWaves.length - 1]?.name ?? DEMO_RECORDING}`} className="underline" style={{ color: '#00E5FF' }}>Replay the session</Link>.</p>
-            </>
-          )}
+          {prs.map((p) => <a key={p.url} className="btn btn-primary w-full justify-center !py-3" href={p.url} target="_blank" rel="noreferrer" data-testid={`button-export-pr-${p.wave}`}><GitPullRequest size={16} /> Round {p.wave} · open the pull request on GitHub</a>)}
+          <button className="btn w-full justify-center !py-3" disabled={!after.downloadUrl} onClick={() => after.downloadUrl && download(after.downloadUrl)} data-testid="button-export-zip-modal"><Package size={16} /> Download the fixed repository (.zip)</button>
+          <p className="ink p-3 text-sm leading-relaxed" style={{ color: '#EAF3F8' }}>{prs.length ? 'Each pull request holds exactly the files that round changed, opened on the real repository. Greenlight never merges; your team reviews and merges it.' : 'This run has no pull request. '}{after.mode === 'recording' ? ' On a live run this also downloads the fixed repository as a zip.' : ''}</p>
+        </div>
+      </Modal>
+
+      <Modal open={listOpen} onClose={() => setListOpen(false)} title={`Everything that was fixed · ${changed.length}`} wide>
+        <div className="jfixed" data-testid="fixed-list">
+          <div className="sign-row lbl !text-[9px]"><span /><span>Requirement</span><span>What it asks for</span><span className="text-right">Now</span></div>
+          {changed.map(({ key, f, to }) => {
+            const ok = /^(L|C)$/.test(to ?? '');
+            return (
+              <div key={key} className="sign-row" data-testid={`fixed-${key}`}>
+                <span style={{ color: ok ? '#4FD99A' : '#FFA62B' }}>{ok ? '✓' : '◐'}</span>
+                <span className="id">{plainName(idOf(f!.standardShort), f!.standardShort)} {f!.id}</span>
+                <span className="truncate" title={f!.title}>{f!.title}</span>
+                <span className="text-right" style={{ color: ok ? '#4FD99A' : '#FFA62B' }}>{STATUS_WORD[to ?? ''] ?? to}</span>
+              </div>
+            );
+          })}
+          {!changed.length && <div className="sign-row" style={{ borderBottom: 0 }}><span /><span className="id">—</span><span style={{ color: '#B9DCEA' }}>No requirement changed status in this round.</span><span /></div>}
         </div>
       </Modal>
     </Shell>
