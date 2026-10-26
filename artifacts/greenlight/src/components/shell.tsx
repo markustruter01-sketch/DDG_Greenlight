@@ -10,6 +10,8 @@ const base = import.meta.env.BASE_URL;
 
 /** The recorded fix sessions of the sample project, in wave order (public/demo/<name>.json). */
 export const DEMO_WAVES: { name: string; wave: number; pullRequest?: string }[] = [
+  { name: 'gev-wave1', wave: 1, pullRequest: 'https://github.com/pierretruter07-sudo/gods-eye-view/pull/39' },
+  { name: 'gev-wave2', wave: 2, pullRequest: 'https://github.com/pierretruter07-sudo/gods-eye-view/pull/40' },
   { name: 'gev-wave3', wave: 3, pullRequest: 'https://github.com/pierretruter07-sudo/gods-eye-view/pull/38' },
 ];
 /** The recording opened from "Watch the recorded fix". */
