@@ -46,7 +46,9 @@ export default function Signoff() {
   return (
     <Shell runId={id} guide={run && !noSource ? guide : undefined} roadDone={!!run && !noSource} runMeta={run ? `${run.projectName} · done` : undefined}>
       <div className="jl">
-        {q.isLoading || after.loading ? <Skeleton className="h-80 w-full" /> : q.isError || !run ? <ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /> : noSource ? (
+        {q.isLoading ? <Skeleton className="h-80 w-full" /> : q.isError || !run ? <ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /> : after.loading ? (
+          <section className="glass jcard is-ok" data-testid="screen-done-loading"><h1 className="jh" style={{ fontSize: 48 }}>You made it.</h1><p className="jp">Adding up what was fixed…</p><Skeleton className="h-40 w-full" /></section>
+        ) : noSource ? (
           <section className="glass jcard" data-testid="screen-done-empty">
             <h1 className="jh">Nothing to sign off yet.</h1>
             <p className="jp">This screen appears once a round has been fixed and proven. Start from the plan, or see it with the recorded fix.</p>

@@ -127,7 +127,9 @@ await page.locator('[data-testid=button-waves-all-rounds]').click().catch(() => 
 await page.waitForTimeout(3500);
 await shot('89-verified-all-waves');
 await page.locator('[data-testid=link-signoff]').click().catch(() => note('no signoff link'));
-await page.waitForTimeout(2500);
+const t1 = Date.now();
+await page.waitForSelector('[data-testid=screen-done]', { timeout: 20000 }).then(() => note(`done screen after ${Date.now() - t1} ms`)).catch(() => note('done screen never rendered'));
+await page.waitForTimeout(800);
 await shot('89b-signoff');
 await page.locator('[data-testid=button-export]').click().catch(() => note('no export button'));
 await page.waitForTimeout(800);

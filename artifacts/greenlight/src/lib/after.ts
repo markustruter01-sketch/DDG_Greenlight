@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { getGetAssessmentQueryKey, getListFixRunsQueryKey, getListReportsQueryKey, useGetAssessment, useListFixRuns, useListReports, type AssessmentRun, type FixRun } from '@workspace/api-client-react';
 import { useRecordings } from '@/pages/replay';
-import { reduceEvents, type FixRecording } from '@/lib/fix-events';
+import { reduceEvents, type FixEvent, type FixRecording } from '@/lib/fix-events';
 import { pc } from '@/lib/greenlight';
 
 /**
@@ -76,8 +76,10 @@ export function useAfter(run: AssessmentRun | undefined, search: string): AfterV
         for (const f of Object.values(view.files)) { add += f.added; del += f.removed; }
         duration += r.durationMs;
         if (view.cost) { cost += view.cost.usd; costSeen = true; }
-        // The full suite, not a later spot-check: keep the biggest run seen across the rounds.
-        if (view.tests.pass + view.tests.fail > total) { pass = view.tests.pass; total = view.tests.pass + view.tests.fail; testsSeen = true; }
+        // The suite's own count ("1472 of 1472 passed") from the last test run of the round; the view only counts runs.
+        const lastTest = [...r.events].reverse().find((e): e is Extract<FixEvent, { type: 'test' }> => e.type === 'test' && /\d+ of \d+ passed/.test(e.output ?? ''));
+        const m = lastTest?.output?.match(/(\d+) of (\d+) passed/);
+        if (m) { pass = Number(m[1]); total = Number(m[2]); testsSeen = true; }
       }
       return {
         ...empty, mode: 'recording', recording: last, statusesAfter, readinessBefore: readinessB, readinessAfter,
