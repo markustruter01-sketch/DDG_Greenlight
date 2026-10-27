@@ -6,28 +6,36 @@ permissions:
   contents: write
 jobs:
   shots:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/setup-node@v4
-        with: { node-version: 24 }
+        with: { node-version: 22 }
       - name: Capture the live site
+        continue-on-error: true
         run: |
-          set -e
-          mkdir -p w && cd w && npm init -y >/dev/null && npm i --no-audit --no-fund playwright@1.56.1 >/dev/null
-          npx playwright install --with-deps chromium >/dev/null
+          mkdir -p out w && cd w && npm init -y >/dev/null && npm i --no-audit --no-fund playwright@1.56.1 >/dev/null
+          npx playwright install --with-deps chromium > ../out/install.log 2>&1 || true
           cat > shot.mjs <<'JS'
           import { chromium } from 'playwright';
+          const out = process.argv[2];
           const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
           const p = await b.newPage({ viewport: { width: 1920, height: 1080 } });
-          await p.goto('https://gods-eye-view.replit.app/', { waitUntil: 'domcontentloaded', timeout: 120000 });
+          p.on('console', m => console.log('console', m.type(), m.text().slice(0, 200)));
+          try { await p.goto('https://gods-eye-view.replit.app/', { waitUntil: 'commit', timeout: 120000 }); } catch (e) { console.log('goto', e.message); }
           const at = [3, 8, 20, 35, 50, 70, 90, 110, 130, 150, 170, 190, 210, 240];
           let last = 0;
-          for (const s of at) { await p.waitForTimeout((s - last) * 1000); last = s; await p.screenshot({ path: `../out/gev-${String(s).padStart(3, '0')}.jpg`, type: 'jpeg', quality: 85 }); console.log('shot', s); }
+          for (const s of at) {
+            await new Promise(r => setTimeout(r, (s - last) * 1000)); last = s;
+            try { await p.screenshot({ path: `${out}/gev-${String(s).padStart(3, '0')}.jpg`, type: 'jpeg', quality: 85, timeout: 90000, caret: 'initial' }); console.log('shot', s); }
+            catch (e) { console.log('fail', s, e.message.slice(0, 300)); }
+          }
           await b.close();
           JS
-          mkdir -p ../out && node shot.mjs
+          timeout 1200 node shot.mjs "$GITHUB_WORKSPACE/out" > ../out/run.log 2>&1 || echo "exit $?" >> ../out/run.log
+          ls -la ../out
       - name: Push
+        if: always()
         run: |
           cd out && git init -q && git checkout -q -b gev-shots-out
           git -c user.name=ci -c user.email=ci@local add -A && git -c user.name=ci -c user.email=ci@local commit -qm shots
