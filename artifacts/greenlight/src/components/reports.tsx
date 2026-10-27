@@ -8,7 +8,7 @@ import { download, reportUrl } from '@/lib/greenlight';
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
-function PdfViewer({ report, onClose }: { report: Report | null; onClose: () => void }) {
+export function PdfViewer({ report, onClose }: { report: Report | null; onClose: () => void }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [doc, setDoc] = useState<pdfjs.PDFDocumentProxy | null>(null);
   const [page, setPage] = useState(1);
@@ -91,9 +91,21 @@ function PdfViewer({ report, onClose }: { report: Report | null; onClose: () => 
   );
 }
 
-export function ReportsModal({ runId, open, onClose }: { runId: string; open: boolean; onClose: () => void }) {
+/** The verification report after recorded fix rounds (`after` = recording names, comma separated). */
+export function afterReport(runId: string, after: string): Report {
+  const n = after.split(',').filter(Boolean).length;
+  return {
+    kind: 'verification-after', standardId: '', formats: ['pdf', 'docx'], generatedAt: new Date().toISOString(),
+    title: n > 1 ? `Verification report: after rounds 1 to ${n}` : `Verification report: after round ${after.match(/\d+/)?.[0] ?? 1}`,
+    url: `/api/greenlight/runs/${runId}/reports/verification?after=${encodeURIComponent(after)}`,
+  } as unknown as Report;
+}
+
+export function ReportsModal({ runId, open, onClose, after }: { runId: string; open: boolean; onClose: () => void; after?: string | null }) {
   const q = useListReports(runId, { query: { enabled: open && !!runId, queryKey: getListReportsQueryKey(runId) } });
   const [view, setView] = useState<Report | null>(null);
+  // After a fix, the verification report of the fixed code comes first; the rest describe the code before the fixes.
+  const rows = q.data ? [...(after ? [afterReport(runId, after)] : []), ...q.data] : q.data;
   return (
     <>
       <Modal open={open} onClose={onClose} title="Reports">
@@ -101,15 +113,15 @@ export function ReportsModal({ runId, open, onClose }: { runId: string; open: bo
           <div className="space-y-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-16" />)}</div>
         ) : q.isError ? (
           <ErrorBlock message="Reports could not be listed." onRetry={() => q.refetch()} />
-        ) : !q.data?.length ? (
+        ) : !rows?.length ? (
           <p className="text-sm" style={{ color: '#CFE3EE' }}>No reports generated for this run yet.</p>
         ) : (
           <ul className="space-y-3">
-            {q.data.map((r) => (
+            {rows!.map((r) => (
               <li key={r.kind} className="tile flex flex-wrap items-center justify-between gap-3 p-4" data-testid={`row-report-${r.kind}`}>
                 <div>
                   <div className="font-head font-medium">{r.title}</div>
-                  <div className="lbl mt-1">{r.kind} · {new Date(r.generatedAt).toLocaleString()}</div>
+                  <div className="lbl mt-1">{r.kind === 'verification-after' ? <span style={{ color: '#4FD99A' }}>After the fixes · re-assessed by the same rules</span> : after ? 'Before the fixes (baseline assessment)' : `${r.kind} · ${new Date(r.generatedAt).toLocaleString()}`}</div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {r.formats.includes('pdf') && (

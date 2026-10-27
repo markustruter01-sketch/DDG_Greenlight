@@ -100,7 +100,13 @@ function day(iso: string) {
   return isNaN(+d) ? iso : d.toLocaleDateString("en-AU", { day: "2-digit", month: "long", year: "numeric", timeZone: "Australia/Brisbane" });
 }
 
-export type BuildOptions = { redact: boolean; catalogues: Catalogue[]; now?: Date };
+export type Verification = {
+  baseline: any;
+  rounds: { wave: number; recordedAt: string; files: number; changed: number; before: Record<string, number>; after: Record<string, number>; verdictBefore: string; verdictAfter: string; tests: string; minutes: number }[];
+  /** true when the after-state is the engine's own full re-assessment */
+  measured: boolean;
+};
+export type BuildOptions = { redact: boolean; catalogues: Catalogue[]; now?: Date; verification?: Verification };
 
 export function buildReport(run: any, kind: string, opts: BuildOptions): ReportDoc {
   const k = KINDS[kind];
@@ -116,12 +122,16 @@ export function buildReport(run: any, kind: string, opts: BuildOptions): ReportD
   const docNo = `GL-${k.code}-${short}`;
 
   // Stable finding references: per standard, most severe first, then clause order.
-  const rank = (f: any) => ({ N: 0, P: 1, UN: 2, L: 3, C: 4 } as any)[f.status] ?? 5;
+  const ver = kind === "verification" ? opts.verification : undefined;
+  // Finding references follow the baseline order, so a verification report uses the same IDs as the findings report.
+  const baseStatus = new Map<string, string>((ver?.baseline?.findings ?? []).map((f: any) => [f.key, f.status]));
+  const baseSev = new Map<string, string>((ver?.baseline?.findings ?? []).map((f: any) => [f.key, f.severity || ""]));
+  const rank = (f: any) => ({ N: 0, P: 1, UN: 2, L: 3, C: 4 } as any)[baseStatus.get(f.key) ?? f.status] ?? 5;
   const views = new Map<string, FindingView>();
   const waveOf = new Map<string, string>();
   for (const w of run.waves || []) for (const fx of w.fixes || []) for (const key of fx.itemKeys || []) if (!waveOf.has(key)) waveOf.set(key, `Round ${w.number}: ${c(fx.title)}`);
   for (const s of stds) {
-    const list = findings.filter((f) => f.standardId === s.id).sort((a, b) => rank(a) - rank(b) || SEV_ORDER.indexOf(a.severity || "") - SEV_ORDER.indexOf(b.severity || "") || String(a.id).localeCompare(String(b.id), "en", { numeric: true }));
+    const list = findings.filter((f) => f.standardId === s.id).sort((a, b) => rank(a) - rank(b) || SEV_ORDER.indexOf(baseSev.get(a.key) ?? a.severity ?? "") - SEV_ORDER.indexOf(baseSev.get(b.key) ?? b.severity ?? "") || String(a.id).localeCompare(String(b.id), "en", { numeric: true }));
     list.forEach((f, i) => {
       const ref = `GL-${STD_CODE[s.id] ?? s.id.toUpperCase()}-${String(i + 1).padStart(3, "0")}`;
       const st = STATUS[f.status] ?? STATUS.UN;
@@ -179,7 +189,7 @@ export function buildReport(run: any, kind: string, opts: BuildOptions): ReportD
   // ── 1 Executive summary ───────────────────────────────────────────────────
   h1("Executive summary", "exec");
   B.push({ t: "verdict", tone: verdict === "Ready" ? "green" : readiness >= 75 ? "amber" : "red", title: verdict, readiness,
-    text: `${run.projectName} meets ${readiness}% of the rated requirements${std ? ` of ${std.name}` : ` across ${stds.length} standards`}. ${counts.blocking} requirement${counts.blocking === 1 ? "" : "s"} must be fixed before release and ${counts.unanswered} need${counts.unanswered === 1 ? "s" : ""} a decision only a person can make.` });
+    text: `${ver ? `After ${ver.rounds.length} approved round${ver.rounds.length === 1 ? "" : "s"} of fixes, ` : ""}${run.projectName} meets ${readiness}%${ver ? ` (was ${ver.baseline.readiness}%)` : ""} of the rated requirements${std ? ` of ${std.name}` : ` across ${stds.length} standards`}. ${counts.blocking} requirement${counts.blocking === 1 ? "" : "s"} must be fixed before release and ${counts.unanswered} need${counts.unanswered === 1 ? "s" : ""} a decision only a person can make.` });
   B.push({ t: "kpis", items: [
     { label: "Requirements assessed", value: String(counts.total), tone: "ink" },
     { label: "Must fix", value: String(counts.blocking), tone: "red" },
@@ -197,6 +207,37 @@ export function buildReport(run: any, kind: string, opts: BuildOptions): ReportD
     `${(run.waves || []).filter((w: any) => w.fixCount > 0).length} remediation rounds are planned; each is proposed as a pull request for your team to review. Nothing is merged automatically.`,
     `Readiness cannot reach 100% by code alone: ${counts.unanswered} requirement${counts.unanswered === 1 ? "" : "s"} ask for sign-offs, documents or decisions that a person must make.`,
   ] });
+
+  // ── Verification comes straight after the summary in a verification report ──
+  if (kind === "verification") {
+    h1("Verification", "verify");
+    if (ver) {
+      const b = ver.baseline;
+      B.push({ t: "callout", tone: "green", title: `Re-assessed by the same rules after ${ver.rounds.length} approved round${ver.rounds.length === 1 ? "" : "s"}`,
+        text: `${ver.measured ? "The figures below are the engine's own re-assessment of the fixed code" : "The figures below apply each round's recorded re-check to the baseline"}, using the same rules, standards and settings as the baseline run ${String(b.id).slice(0, 8)}. Each round was proposed as a pull request on the project's repository and reviewed by people; Greenlight never merges. Project tests after the last round: ${ver.rounds[ver.rounds.length - 1].tests}.` });
+      h2("Readiness before and after", "verify-standards");
+      B.push({ t: "table", caption: "Readiness by standard, before and after", cols: [{ h: "Standard", w: 0.46 }, { h: "Before", w: 0.18, align: "right" }, { h: "After", w: 0.18, align: "right" }, { h: "Change", w: 0.18, align: "right" }],
+        rows: stds.map((s) => { const before = b.standards.find((x: any) => x.id === s.id)?.readiness ?? s.readiness; return [s.name, `${before}%`, { text: `${s.readiness}%`, tone: toneOf(s.readiness), bold: true }, `${s.readiness - before >= 0 ? "+" : ""}${s.readiness - before} pts`]; }) });
+      const bc = std ? b.standards.find((x: any) => x.id === std.id) : b.counts;
+      h2("Requirements before and after", "verify-counts");
+      B.push({ t: "table", caption: "Requirement ratings, before and after", cols: [{ h: "Measure", w: 0.46 }, { h: "Before", w: 0.18, align: "right" }, { h: "After", w: 0.18, align: "right" }, { h: "Change", w: 0.18, align: "right" }],
+        rows: ([["Must fix", "blocking"], ["Non-compliant", "failed"], ["Partially compliant", "partial"], ["Needs a person", "unanswered"]] as [string, string][]).map(([label, key]) => {
+          const x = Number(bc?.[key] ?? 0), y = Number((counts as any)[key] ?? 0);
+          return [label, String(x), { text: String(y), bold: true, tone: (y === 0 ? "green" : key === "unanswered" ? "blue" : "amber") as Tone }, `${y - x >= 0 ? "+" : ""}${y - x}`];
+        }) });
+      h2("Rounds", "verify-rounds");
+      B.push({ t: "table", caption: "Fix rounds, as recorded", cols: [{ h: "Round", w: 0.1 }, { h: "Recorded", w: 0.2 }, { h: "Files", w: 0.1, align: "right" }, { h: "Requirements changed", w: 0.2, align: "right" }, { h: "Project tests", w: 0.2 }, { h: "Verdict after", w: 0.2 }],
+        rows: ver.rounds.map((r) => [String(r.wave), day(r.recordedAt), String(r.files), String(r.changed), r.tests, r.verdictAfter]) });
+      const keyOf = new Map<FindingView, string>(); for (const f of findings) { const v = views.get(f.key); if (v) keyOf.set(v, f.key); }
+      const changed = ordered.filter((v) => { const s0 = baseStatus.get(keyOf.get(v) ?? ""); return !!s0 && STATUS[s0]?.word !== v.status; });
+      h2(`Requirements that changed: ${changed.length}`, "verify-changed");
+      B.push({ t: "p", text: "Every requirement whose rating changed between the baseline and the re-assessment. References are the same as in the findings report.", style: "muted" });
+      B.push({ t: "table", small: true, caption: "Changed requirements", cols: [{ h: "Ref", w: 0.14 }, { h: "Clause", w: 0.11 }, { h: "Requirement", w: 0.43 }, { h: "Before", w: 0.16 }, { h: "After", w: 0.16 }],
+        rows: changed.map((v) => { const s0 = STATUS[baseStatus.get(keyOf.get(v) ?? "") ?? "UN"] ?? STATUS.UN; return [{ text: v.ref, goTo: v.dest, mono: true }, { text: v.reqId, mono: true }, trim(v.title, 110), { text: s0.word, tone: s0.tone }, { text: v.status, tone: v.statusTone }]; }) });
+    } else {
+      B.push({ t: "callout", tone: "amber", title: "Baseline only", text: "No approved fix has been verified for this run. This is the starting assessment, not evidence of a successful fix. The verification report after a fix compares this baseline with the re-assessment." });
+    }
+  }
 
   // ── 2 Introduction and scope ──────────────────────────────────────────────
   const inv = run.inventory || {};
@@ -330,13 +371,6 @@ export function buildReport(run: any, kind: string, opts: BuildOptions): ReportD
   }
 
   // ── Verification ──────────────────────────────────────────────────────────
-  if (kind === "verification") {
-    h1("Verification", "verify");
-    B.push(run.verificationOf
-      ? { t: "callout", tone: "green", title: "Re-assessment after approved fixes", text: `This run re-assessed the fixed code with the same rules as run ${String(run.verificationOf).slice(0, 8)}. Project tests: ${run.testResult || "see the fix timeline"}.` }
-      : { t: "callout", tone: "amber", title: "Baseline only", text: "No approved fix has been verified for this run. This is the starting assessment, not evidence of a successful fix. The verification report after a fix compares this baseline with the re-assessment." });
-  }
-
   // ── Items that need a person ──────────────────────────────────────────────
   const un = ordered.filter((v) => v.status === STATUS.UN.word);
   if (un.length && kind !== "fix-prompt") {
@@ -413,7 +447,7 @@ export function buildReport(run: any, kind: string, opts: BuildOptions): ReportD
   ] });
 
   return {
-    kind, kindCode: k.code, title: k.title, subtitle: std ? std.name : k.subtitle, docNo, revision: "1.0", issued: day(issuedAt.toISOString()),
+    kind, kindCode: k.code, title: k.title, subtitle: ver ? `After ${ver.rounds.length === 1 ? `round ${ver.rounds[0].wave}` : `rounds ${ver.rounds[0].wave} to ${ver.rounds[ver.rounds.length - 1].wave}`}, re-assessed by the same rules` : std ? std.name : k.subtitle, docNo, revision: "1.0", issued: day(issuedAt.toISOString()),
     marking, markingAssigned, markingNote, dlm: "", project: run.projectName, source: sourceLabel(run, redact), runId: String(run.id), assessedAt: day(run.assessedAt),
     standardLabel: std ? std.short : "All standards", control, revisions, distribution, notices, blocks: B, register: ordered, soa,
   };

@@ -10,6 +10,8 @@ import { download, reportUrl, tally } from '@/lib/greenlight';
 import { plainName } from '@/lib/standard-info';
 import { fmtClock } from '@/lib/fix-events';
 import { downloadAuditCsv, openAuditDocument } from '@/lib/audit-doc';
+import { PdfViewer, afterReport } from '@/components/reports';
+import type { Report } from '@workspace/api-client-react';
 
 const colorFor = (v: number) => (v < 40 ? '#FF5C6E' : v < 75 ? '#FFA62B' : '#4FD99A');
 
@@ -26,6 +28,7 @@ export default function Verified() {
   const afterParam = useMemo(() => new URLSearchParams(search).get('after'), [search]);
   const lastRec = afterParam ? DEMO_WAVES.find((w) => w.name === afterParam.split(',').pop()) : undefined;
   const [applied, setApplied] = useState(false);
+  const [viewReport, setViewReport] = useState<Report | null>(null);
   useEffect(() => {
     if (after.mode == null || after.loading) return;
     const t = window.setTimeout(() => setApplied(true), 600);
@@ -47,7 +50,7 @@ export default function Verified() {
   };
 
   return (
-    <Shell runId={id} guide={run && !noSource ? guide : undefined} runMeta={run ? `${run.projectName} · proof` : undefined} pip={run && !noSource ? (afterParam && !afterParam.includes(',') && DEMO_WAVES.length > 1 ? { id: 'proof-all', what: 'The same code checked again. This is one round.', press: 'Press All rounds.', target: '[data-testid="button-waves-all-rounds"]', also: 'The audit document lists every line changed.' } : { id: 'proof', what: `The same code checked again. Not 100%: ${counts?.unanswered ?? 0} items need a person, because the standards say so.`, press: 'Press Sign it off.', target: '[data-testid="link-signoff"]', also: 'The audit document lists every requirement and every line changed.' }) : null}>
+    <Shell runId={id} reportsAfter={after.mode === 'recording' ? afterParam : null} guide={run && !noSource ? guide : undefined} runMeta={run ? `${run.projectName} · proof` : undefined} pip={run && !noSource ? (afterParam && !afterParam.includes(',') && DEMO_WAVES.length > 1 ? { id: 'proof-all', what: 'The same code checked again. This is one round.', press: 'Press All rounds.', target: '[data-testid="button-waves-all-rounds"]', also: 'The audit document lists every line changed.' } : { id: 'proof', what: `The same code checked again. Not 100%: ${counts?.unanswered ?? 0} items need a person, because the standards say so.`, press: 'Press Sign it off.', target: '[data-testid="link-signoff"]', also: 'The audit document lists every requirement and every line changed.' }) : null}>
       <div className="jl">
         {q.isLoading || after.loading ? <Skeleton className="h-80 w-full" /> : q.isError || !run ? <ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /> : noSource ? (
           <section className="glass jcard" data-testid="screen-proof-empty">
@@ -83,7 +86,12 @@ export default function Verified() {
                       {after.downloadUrl && <button className="btn btn-quiet" onClick={() => after.downloadUrl && download(after.downloadUrl)} data-testid="button-fixed-code"><Package size={15} /> Fixed code (.zip)</button>}
                       {after.verificationPdfUrl && <button className="btn btn-quiet" onClick={() => after.verificationPdfUrl && download(reportUrl(after.verificationPdfUrl, 'pdf'))} data-testid="button-verification-report"><FileCheck2 size={15} /> Verification report (PDF)</button>}
                     </>
-                  ) : lastRec?.pullRequest ? <a className="btn btn-quiet" href={lastRec.pullRequest} target="_blank" rel="noreferrer" data-testid="button-review-pr"><GitPullRequest size={15} /> The pull request for round {lastRec.wave}</a> : null}
+                  ) : (
+                    <>
+                      {afterParam && <button className="btn btn-quiet" onClick={() => setViewReport(afterReport(id, afterParam))} data-testid="button-verification-report"><FileCheck2 size={15} /> Verification report (PDF)</button>}
+                      {lastRec?.pullRequest && <a className="btn btn-quiet" href={lastRec.pullRequest} target="_blank" rel="noreferrer" data-testid="button-review-pr"><GitPullRequest size={15} /> The pull request for round {lastRec.wave}</a>}
+                    </>
+                  )}
                 </div>
               </div>
               <div className="jbars" data-important>
@@ -104,6 +112,7 @@ export default function Verified() {
           </section>
         )}
       </div>
+      <PdfViewer report={viewReport} onClose={() => setViewReport(null)} />
     </Shell>
   );
 }

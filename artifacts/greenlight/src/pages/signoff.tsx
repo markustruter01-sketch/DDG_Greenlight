@@ -10,6 +10,8 @@ import { STATUS_WORD, download, reportUrl } from '@/lib/greenlight';
 import { plainName } from '@/lib/standard-info';
 import { fmtClock } from '@/lib/fix-events';
 import { downloadAuditCsv, openAuditDocument } from '@/lib/audit-doc';
+import { PdfViewer, afterReport } from '@/components/reports';
+import type { Report } from '@workspace/api-client-react';
 
 /**
  * Step 7 · Done: the number, everything that was fixed, and what you can take
@@ -26,6 +28,7 @@ export default function Signoff() {
   const recWaves = afterParam ? DEMO_WAVES.filter((w) => afterParam.split(',').includes(w.name)) : [];
   const [exportOpen, setExportOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
+  const [viewReport, setViewReport] = useState<Report | null>(null);
   const changed = useMemo(() => {
     if (!run) return [];
     const by = new Map(run.findings.map((f) => [f.key, f]));
@@ -45,7 +48,7 @@ export default function Signoff() {
   const guide = { steps: ['Export the fixed code. That is the whole job done.', nextWave ? `Come back for round ${nextWave.number} whenever you are ready` : 'Every round is done'], current: 0, tone: 'ok' as const };
 
   return (
-    <Shell runId={id} guide={run && !noSource ? guide : undefined} roadDone={!!run && !noSource} runMeta={run ? `${run.projectName} · done` : undefined} pip={run && !noSource ? { id: 'done', what: 'Done. Everything you can take away is on the right.', press: 'Press Export the fixed code.', target: '[data-testid="button-export"]', also: `Answer the ${left} takes you to the questions only a person can answer.` } : null}>
+    <Shell runId={id} reportsAfter={after.mode === 'recording' ? afterParam : null} guide={run && !noSource ? guide : undefined} roadDone={!!run && !noSource} runMeta={run ? `${run.projectName} · done` : undefined} pip={run && !noSource ? { id: 'done', what: 'Done. Everything you can take away is on the right.', press: 'Press Export the fixed code.', target: '[data-testid="button-export"]', also: `Answer the ${left} takes you to the questions only a person can answer.` } : null}>
       <div className="jl">
         {q.isLoading ? <Skeleton className="h-80 w-full" /> : q.isError || !run ? <ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /> : after.loading ? (
           <section className="glass jcard is-ok" data-testid="screen-done-loading"><h1 className="jh" style={{ fontSize: 48 }}>You made it.</h1><p className="jp">Adding up what was fixed…</p><Skeleton className="h-40 w-full" /></section>
@@ -78,7 +81,7 @@ export default function Signoff() {
                 {!prs.length && <span className="jout" style={{ opacity: .6 }}><GitPullRequest size={18} /> No pull request for this run</span>}
                 <button className="jout" disabled={!after.downloadUrl} onClick={() => after.downloadUrl && download(after.downloadUrl)} data-testid="button-export-zip"><Package size={18} style={{ color: '#7CC9E8' }} /> The fixed code as a zip{after.downloadUrl ? '' : ' · live runs only'}</button>
                 <button className="jout" onClick={() => openAuditDocument(run, after, download)} data-testid="button-audit-document"><FileSearch size={18} style={{ color: '#00E5FF' }} /> The audit document: every requirement and every line changed, before and after</button>
-                <button className="jout" disabled={!after.verificationPdfUrl && !report('pdf')} onClick={() => { const u = after.verificationPdfUrl ?? report('pdf')?.url; if (u) download(reportUrl(u, 'pdf')); }} data-testid="button-verification-report"><FileCheck2 size={18} style={{ color: '#FFA62B' }} /> The report for your assurance team (PDF)</button>
+                <button className="jout" disabled={!after.verificationPdfUrl && !afterParam && !report('pdf')} onClick={() => { if (after.mode === 'recording' && afterParam) { setViewReport(afterReport(id, afterParam)); return; } const u = after.verificationPdfUrl ?? report('pdf')?.url; if (u) download(reportUrl(u, 'pdf')); }} data-testid="button-verification-report"><FileCheck2 size={18} style={{ color: '#FFA62B' }} /> The report for your assurance team (PDF)</button>
                 <button className="jout" onClick={() => downloadAuditCsv(run, after, download)} data-testid="button-trace-sheet"><FileSpreadsheet size={18} style={{ color: '#B9C3CC' }} /> Every requirement, before and after, as a spreadsheet</button>
                 <span className="jnote" style={{ marginTop: 6 }}>{after.filesChanged} files · <span style={{ color: '#4FD99A' }}>+{after.linesAdded.toLocaleString()}</span> / <span style={{ color: '#FF8C9A' }}>−{after.linesRemoved.toLocaleString()}</span>{after.tests ? ` · ${after.tests.pass.toLocaleString()} / ${after.tests.total.toLocaleString()} tests` : ''}{after.durationMs ? ` · ${fmtClock(after.durationMs)}` : ''}{after.costUsd != null ? ` · $${after.costUsd.toFixed(2)}` : ''}</span>
               </div>
@@ -112,6 +115,7 @@ export default function Signoff() {
           {!changed.length && <div className="sign-row" style={{ borderBottom: 0 }}><span /><span className="id">—</span><span style={{ color: '#B9DCEA' }}>No requirement changed status in this round.</span><span /></div>}
         </div>
       </Modal>
+      <PdfViewer report={viewReport} onClose={() => setViewReport(null)} />
     </Shell>
   );
 }

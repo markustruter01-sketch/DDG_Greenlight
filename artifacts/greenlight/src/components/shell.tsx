@@ -95,6 +95,7 @@ export function Shell({
   roadDone = false,
   roadStep,
   pip,
+  reportsAfter,
 }: {
   children: ReactNode;
   runId?: string;
@@ -110,6 +111,8 @@ export function Shell({
   roadStep?: number;
   /** What Freya, the guide, says on this screen. */
   pip?: PipSpec | null;
+  /** Recorded fix rounds shown on this screen: the Reports list leads with the report after them. */
+  reportsAfter?: string | null;
 }) {
   const [reports, setReports] = useState(false);
   const pipOff = usePipOff();
@@ -149,7 +152,7 @@ export function Shell({
       {chrome && guide && (!pip || pipOff) && <Guide spec={guide} />}
       <main className="app-main relative z-10 flex flex-1 flex-col">{children}</main>
       <Pip spec={pip ?? null} />
-      {runId && <ReportsModal runId={runId} open={reports} onClose={() => setReports(false)} />}
+      {runId && <ReportsModal runId={runId} open={reports} onClose={() => setReports(false)} after={reportsAfter} />}
     </div>
   );
 }

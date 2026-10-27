@@ -2,10 +2,13 @@ import { buildReport, clean, ownerOf } from "./report/model";
 import { renderPdf } from "./report/pdf";
 import { renderDocx } from "./report/docx";
 import { renderXlsx } from "./report/xlsx";
+import { recordedAfter } from "./report/recorded";
 import { Storage } from "@google-cloud/storage";
 import { db, greenlightReports, eq } from "@workspace/db";
 import { getRun } from "./greenlight-store";
 import { createHash } from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 import { catalogues } from "./greenlight-engine";
 
 const storage = new Storage({
@@ -99,25 +102,33 @@ function reportLines(run: any, kind: string, title: string) {
   return lines;
 }
 /** Bump when the layout changes, so stored copies of older layouts are not served. */
-const REPORT_VERSION = "r2";
-export async function generateReport(id: string, kind: string, format = "pdf") {
+const REPORT_VERSION = "r3";
+const DEMO_DIR = [
+  path.resolve(process.cwd(), "../greenlight/public/demo"), path.resolve(process.cwd(), "artifacts/greenlight/public/demo"),
+  path.resolve(process.cwd(), "../greenlight/dist/public/demo"), path.resolve(process.cwd(), "artifacts/greenlight/dist/public/demo"),
+].find((d) => fs.existsSync(path.join(d, "gev-final.json")));
+
+export async function generateReport(id: string, kind: string, format = "pdf", after = "") {
   const t = TYPES.find(t => t.kind === kind);
   if (!t || !t.formats.includes(format)) throw Object.assign(new Error("Unsupported report or format"), { status: 400 });
   const { result: run } = await getRun(id);
   if (t.standardId && !run.standards.some((s: any) => s.id === t.standardId)) throw Object.assign(new Error("Standard was not selected"), { status: 400 });
-  const reportId = `${id}:${kind}:${format}:${REPORT_VERSION}`;
+  const afterKey = after ? `:after=${after.replace(/[^a-z0-9,-]/gi, "")}` : "";
+  const reportId = `${id}:${kind}:${format}:${REPORT_VERSION}${afterKey}`;
+  const fileName = `${run.projectName}-${kind}${after ? "-after-fix" : ""}.${format}`;
   const [stored] = await db.select().from(greenlightReports).where(eq(greenlightReports.id, reportId));
-  if (stored) return { buffer: await readObject(stored.objectPath), filename: `${run.projectName}-${kind}.${format}` };
+  if (stored) return { buffer: await readObject(stored.objectPath), filename: fileName };
   // Demonstration deployments never name the repository owner (GREENLIGHT_EXTERNAL_LINKS=1 allows it).
   const redact = process.env.GREENLIGHT_EXTERNAL_LINKS !== "1";
-  const doc = buildReport(run, kind, { redact, catalogues });
+  const rec = after ? recordedAfter(run, after, DEMO_DIR) : null;
+  const doc = buildReport(rec ? rec.afterRun : run, kind, { redact, catalogues, verification: rec?.verification });
   let buffer: Buffer;
   if (format === "pdf") buffer = await renderPdf(doc);
   else if (format === "docx") buffer = await renderDocx(doc);
   else if (format === "xlsx") buffer = await renderXlsx(doc);
   else buffer = Buffer.from(clean("# " + reportLines(run, kind, t.title).join("\n\n"), redact ? ownerOf(run) : null));
-  const key = `${id}/reports/${REPORT_VERSION}/${kind}.${format}`;
+  const key = `${id}/reports/${REPORT_VERSION}/${kind}${after ? `-after-${after.replace(/[^a-z0-9,-]/gi, "").replace(/,/g, "+")}` : ""}.${format}`;
   const objectPath = await saveObject(key, buffer, mime[format]!);
   await db.insert(greenlightReports).values({ id: reportId, runId: id, kind, format, objectPath }).onConflictDoNothing();
-  return { buffer, filename: `${run.projectName}-${kind}.${format}`, hash: createHash("sha256").update(buffer).digest("hex") };
+  return { buffer, filename: fileName, hash: createHash("sha256").update(buffer).digest("hex") };
 }

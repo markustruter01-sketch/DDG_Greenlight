@@ -113,7 +113,7 @@ router.get(`${prefix}/runs/:id/reports/:kind`, async (req, res) => {
   const id = String(req.params.id);
   await accessRun(req, id);
   const format = String(req.query.format || "pdf");
-  const output = await generateReport(id, String(req.params.kind), format);
+  const output = await generateReport(id, String(req.params.kind), format, typeof req.query.after === "string" ? req.query.after : "");
   res.setHeader("Content-Type", mime[format] || "application/octet-stream");
   res.setHeader("Content-Disposition", `${req.query.download ? "attachment" : "inline"}; filename="${output.filename.replace(/["\r\n]/g, "")}"`);
   res.setHeader("Cache-Control", "private, max-age=3600");
