@@ -990,8 +990,8 @@ body{background:#16181C}
 .pip{position:fixed;z-index:95;display:flex;align-items:flex-end;gap:10px;max-width:min(460px,calc(100vw - 32px));filter:drop-shadow(0 18px 40px rgba(0,0,0,.45))}
 .pip.is-bl{left:max(20px,env(safe-area-inset-left,0px));bottom:max(20px,env(safe-area-inset-bottom,0px))}
 .pip.is-br{right:max(20px,env(safe-area-inset-right,0px));bottom:max(20px,env(safe-area-inset-bottom,0px));flex-direction:row-reverse}
-.pip.is-tl{left:max(20px,env(safe-area-inset-left,0px));top:84px;align-items:flex-start}
-.pip.is-tr{right:max(20px,env(safe-area-inset-right,0px));top:84px;align-items:flex-start;flex-direction:row-reverse}
+.pip.is-tl{left:max(20px,env(safe-area-inset-left,0px));top:150px;align-items:flex-start}
+.pip.is-tr{right:max(20px,env(safe-area-inset-right,0px));top:150px;align-items:flex-start;flex-direction:row-reverse}
 .pip-avatar{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding-top:16px;flex:none}
 .pip-body{width:56px;height:56px;animation:pip-bob 3.2s ease-in-out infinite}
 .pip-face{display:block}
