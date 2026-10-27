@@ -1,0 +1,27 @@
+09:19:26 run 6eca910c-eaa2-4314-a9f0-005dfe788949
+09:19:46 shot gl-home
+09:19:54 shot gl-results
+09:20:10 shot gl-orbit
+09:20:21 shot gl-plan
+09:20:39 shot gl-replay-15s
+09:20:45 shot gl-replay-45
+09:20:50 shot gl-replay-60
+09:20:55 shot gl-replay-75
+09:21:00 shot gl-replay-88
+09:21:10 shot gl-proof
+09:21:17 shot gl-done
+09:21:22 viewer up
+09:21:55 shot gev-dir-01
+09:21:55   level 100% Loading planet... GOD'S EYE VIEW Data provided by:×Flights: OpenSky Network
+09:31:13 Heathrow Airport loaded false
+09:32:15 shot gev-place-heathrow-airport
+09:35:32 Port of Rotterdam loaded false
+09:36:14 shot gev-place-port-of-rotterdam
+09:39:26 Dubai International Airport loaded false
+09:39:52 shot gev-place-dubai-international-airport
+09:40:54 Frankfurt Airport loaded true
+09:41:20 shot gev-place-frankfurt-airport
+09:44:14 Eiffel Tower Paris loaded false
+09:44:29 shot gev-place-eiffel-tower-paris
+09:47:12 Sydney Harbour Bridge loaded false
+09:47:27 shot gev-place-sydney-harbour-bridge
