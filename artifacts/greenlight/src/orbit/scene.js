@@ -23,7 +23,7 @@ const COLOR = {
   saf: 0x7cc9e8,
   sec: 0x00e5ff,
   ai: 0xf7fbff,
-  link: 0x9fb6d4,
+  link: 0x5fcfe6,
   linkHot: 0xffd0c8,
   linkShow: 0x00e5ff,
   FIXED: 0x4fd99a,
@@ -473,12 +473,18 @@ export function createOrbitScene({ nodes, groups, themes }) {
   }
 
   /** Re-apply every opacity, position and scale from the current state. */
+  /** A ring switched off from the controls (layers ring_saf / ring_sec / ring_ai). */
+  function lensOff(lens) {
+    return !!lens && state.layers?.[`ring_${lens}`] === false;
+  }
+
   function apply(now = performance.now()) {
     const t = state.morph;
     shell.uniforms.alpha.value = factor('core', t);
     for (const f of fadeables) {
       const e = f.part ? ef[f.part] * (f.tube ? ef.tube : 1) : 1;
-      f.material.opacity = Math.min(1, f.base * factor(f.key, t) * e);
+      const ringOff = f.part && lensOff(String(f.part).replace('Glow', ''));
+      f.material.opacity = ringOff ? 0 : Math.min(1, f.base * factor(f.key, t) * e);
     }
     shell.uniforms.alpha.value *= ef.core;
     const ringFactor = factor('rings', t);
@@ -508,6 +514,7 @@ export function createOrbitScene({ nodes, groups, themes }) {
         o = Math.max(o, 0.6 + 0.4 * k);
         e.mesh.scale.setScalar(n.size * (1.25 + 1.4 * k));
       }
+      if (lensOff(n.lens)) o = 0;
       e.material.opacity = o * ringFactor;
       const y = n.base[1] + RINGS[n.lens].lift * e.lift * lift;
       e.mesh.position.y = y;
@@ -527,13 +534,17 @@ export function createOrbitScene({ nodes, groups, themes }) {
         l.material.color.setHex(COLOR.linkShow);
         continue; // opacity animated in frame()
       }
+      if (lensOff(byId.get(l.a)?.node.lens) || lensOff(byId.get(l.b)?.node.lens)) {
+        l.material.opacity = 0;
+        continue;
+      }
       const hot =
         linksOn &&
         ((state.selected && (l.a === state.selected || l.b === state.selected)) ||
           (state.hovered && (l.a === state.hovered || l.b === state.hovered)));
       if (linksOn) rebuildLink(l);
       l.material.color.setHex(hot ? COLOR.linkHot : COLOR.link);
-      l.material.opacity = hot ? 0.95 : linksOn ? (showcase.theme !== null ? 0.015 : 0.03) : 0;
+      l.material.opacity = hot ? 0.95 : linksOn ? (showcase.theme !== null ? 0.03 : 0.11) : 0;
       if (hot) focusedLinks.add(l);
     }
     if (pulseOn && state.pulse.key === 'core')

@@ -1167,3 +1167,14 @@ body{background:#16181C}
 .rp-sign i{display:block;height:56px;border-bottom:1.5px solid #15191D}
 @media (max-width:1180px){.rp-grid{grid-template-columns:minmax(0,1fr)}.rp-rail{position:static;order:2;max-height:none}}
 @media (max-width:760px){.rp{padding:12px 12px 48px}.rp-hero,.rp-two{grid-template-columns:minmax(0,1fr)}.rp-kpis,.rp-riskcounts{grid-template-columns:repeat(2,minmax(0,1fr))}.rp-sign{grid-template-columns:minmax(0,1fr)}.rp-mark{display:none}.rp-req-row{grid-template-columns:minmax(0,1fr);gap:2px}}
+
+/* Ring switches (top left of the audit view) and the "what you can switch" lines in the hint */
+.orbit-rings{align-items:center;gap:6px}
+.orbit-rings-label{font:600 10px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#9AA6AF;margin-right:2px}
+.orbit-ring-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.35);color:#9AA6AF;font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.orbit-ring-pill i{width:9px;height:9px;border-radius:50%;border:2px solid var(--ring);display:inline-block}
+.orbit-ring-pill.is-active{color:#F7FBFF;border-color:var(--ring);background:rgba(0,229,255,.08)}
+.orbit-ring-pill.is-active i{background:var(--ring)}
+.orbit-ring-pill:hover{color:#fff}
+.orbit-layer-pill{cursor:pointer}
+.orbit-hint-more{display:flex;gap:18px;font-size:12px;color:#9FE8F5;letter-spacing:.02em}

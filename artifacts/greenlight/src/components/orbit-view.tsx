@@ -9,6 +9,11 @@ import { OrbitCompatibility } from './orbit-compatibility';
 
 type Layers = Record<string, boolean>;
 const FOV = Math.PI / 6;
+const RING_DEFS = [
+  { id: 'saf', name: 'Safety', color: '#7CC9E8' },
+  { id: 'sec', name: 'Security', color: '#00E5FF' },
+  { id: 'ai', name: 'AI', color: '#F7FBFF' },
+];
 const LAYER_DEFS = [
   { id: 'mustfix', name: 'Must fix' },
   { id: 'gaps', name: 'Other gaps' },
@@ -106,7 +111,7 @@ export function OrbitView({
   const statusesRef = useRef(statuses);
   statusesRef.current = statuses;
   const hoverRef = useRef<string | null>(null);
-  const [layers, setLayers] = useState<Layers>({ mustfix: true, gaps: false, passing: false, links: true });
+  const [layers, setLayers] = useState<Layers>({ mustfix: true, gaps: false, passing: false, links: true, ring_saf: true, ring_sec: true, ring_ai: true });
   const layersRef = useRef(layers);
   layersRef.current = layers;
   const [hover, setHover] = useState<{ x: number; y: number; id: string } | null>(null);
@@ -632,10 +637,16 @@ export function OrbitView({
             )}
           </>
         )}
-        <div className="lbl pointer-events-none absolute left-4 top-3 hidden gap-4 sm:flex">
-          <span style={{ color: '#7CC9E8' }} data-tour-target="ring-saf">Safety</span>
-          <span style={{ color: '#00E5FF' }} data-tour-target="ring-sec">Security</span>
-          <span style={{ color: '#F7FBFF' }} data-tour-target="ring-ai">AI</span>
+        <div className="orbit-rings absolute left-3 top-3 z-10 hidden sm:flex" aria-label="Rings">
+          <span className="orbit-rings-label">Rings</span>
+          {RING_DEFS.map((r) => (
+            <button key={r.id} className={`orbit-ring-pill ${layers[`ring_${r.id}`] !== false ? 'is-active' : ''}`} style={{ ['--ring' as string]: r.color }}
+              onClick={() => setLayers((current) => ({ ...current, [`ring_${r.id}`]: current[`ring_${r.id}`] === false }))}
+              aria-pressed={layers[`ring_${r.id}`] !== false} title={`Show or hide the ${r.name.toLowerCase()} ring`}
+              data-testid={`button-ring-${r.id}`} data-tour-target={`ring-${r.id}`}>
+              <i />{r.name}
+            </button>
+          ))}
         </div>
         {tourButton && <div className="absolute right-3 top-3 z-20 flex items-center gap-2">{fullscreen && <button className="btn !px-3 !py-1.5 text-xs" onClick={toggleFullscreen} data-testid="button-exit-fullscreen"><Minimize2 size={14} /> Exit full screen</button>}{tourButton}</div>}
         {tourCaption}
@@ -645,14 +656,16 @@ export function OrbitView({
             <Mouse className="orbit-hint-mouse" size={26} strokeWidth={1.6} />
             <div className="orbit-hint-title">Drag to look around</div>
             <div className="orbit-hint-keys"><span><b>Drag</b> · turn the view</span><span><b>Scroll</b> · zoom</span><span><b>Click a light</b> · open it</span></div>
+            <div className="orbit-hint-more"><span>↖ Rings on and off, top left</span><span>↙ Layers and links, below</span></div>
           </div>
         )}
         {!compatibility && moved && (
-          <div className="orbit-hint-mini" data-testid="orbit-hint-mini" aria-hidden="true"><span><b>Drag</b> turn</span><span><b>Scroll</b> zoom</span><span><b>Click</b> open</span></div>
+          <div className="orbit-hint-mini" data-testid="orbit-hint-mini" aria-hidden="true"><span><b>Drag</b> turn</span><span><b>Scroll</b> zoom</span><span><b>Click</b> open</span><span><b>Rings</b> top left</span><span><b>Layers</b> below</span></div>
         )}
       </div>
       <div className="orbit-controls-row">
         <div className="orbit-controls-left" aria-label="Orbit layers">
+          <span className="orbit-rings-label">Show</span>
           {LAYER_DEFS.map((layer) => (
             <button key={layer.id}
               onClick={() => setLayers((current) => ({ ...current, [layer.id]: !current[layer.id] }))}

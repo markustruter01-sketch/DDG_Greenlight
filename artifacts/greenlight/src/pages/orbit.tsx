@@ -460,7 +460,7 @@ export default function Orbit() {
   return (
     <Shell runId={id} roadStep={2} pip={run && ['closed', 'prompt', 'complete'].includes(tourStatus) && !target ? (!tourSeen
       ? { id: 'orbit-tour', what: 'Every light is one requirement. Red is serious; raised pins must be fixed.', press: 'Press What am I looking at? The two-minute tour plays full screen.', target: '[data-testid="button-play-tour"]' }
-      : { id: 'orbit', what: 'Every light is one requirement. Red is serious; raised pins must be fixed.', press: 'Press Show me the plan.', target: '[data-testid="link-header-plan"]', also: 'Tap any light to read it.' }) : null} tourHeaderHighlight={tourIndex === 8 && !['closed', 'prompt'].includes(tourStatus)}
+      : { id: 'orbit', what: 'Every light is one requirement. Red is serious; raised pins must be fixed.', press: 'Press Show me the plan.', target: '[data-testid="link-header-plan"]', also: 'Drag to turn it. Switch rings on and off top left, layers and links below. Tap any light to read it.' }) : null} tourHeaderHighlight={tourIndex === 8 && !['closed', 'prompt'].includes(tourStatus)}
       guide={run && !afterName ? {
         steps: tourActiveNow
           ? ['Watch the guided tour; press Exit on the caption to take over', 'Tap any light to read what is wrong and where', 'Press Show me the plan']
