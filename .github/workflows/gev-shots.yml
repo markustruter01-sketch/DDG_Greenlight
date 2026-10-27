@@ -1,0 +1,34 @@
+name: GEV shots (one-off)
+on:
+  push:
+    branches: [tooling/gev-shots]
+permissions:
+  contents: write
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - name: Capture the live site
+        run: |
+          set -e
+          mkdir -p w && cd w && npm init -y >/dev/null && npm i --no-audit --no-fund playwright@1.56.1 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+          cat > shot.mjs <<'JS'
+          import { chromium } from 'playwright';
+          const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+          const p = await b.newPage({ viewport: { width: 1920, height: 1080 } });
+          await p.goto('https://gods-eye-view.replit.app/', { waitUntil: 'domcontentloaded', timeout: 120000 });
+          const at = [3, 8, 20, 35, 50, 70, 90, 110, 130, 150, 170, 190, 210, 240];
+          let last = 0;
+          for (const s of at) { await p.waitForTimeout((s - last) * 1000); last = s; await p.screenshot({ path: `../out/gev-${String(s).padStart(3, '0')}.jpg`, type: 'jpeg', quality: 85 }); console.log('shot', s); }
+          await b.close();
+          JS
+          mkdir -p ../out && node shot.mjs
+      - name: Push
+        run: |
+          cd out && git init -q && git checkout -q -b gev-shots-out
+          git -c user.name=ci -c user.email=ci@local add -A && git -c user.name=ci -c user.email=ci@local commit -qm shots
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" gev-shots-out
