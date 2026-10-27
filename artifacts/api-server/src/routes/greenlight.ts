@@ -48,7 +48,9 @@ router.get(`${prefix}/config`, async (_req, res) => {
     questions: e.FACTS.map((f: any) => ({ id: f.id, question: f.question, theme: f.theme || "governance", kind: f.kind,
       options: f.options?.map((o: any) => Array.isArray(o) ? o[0] : o) || [] })),
     fixingEnabled: !!process.env.ANTHROPIC_API_KEY && sandboxStatus().available,
-    githubEnabled: !!process.env.GITHUB_TOKEN, checks: "rules, no AI", engineVersion: "Greenlight / CrossCheck standalone 1.0",
+    githubEnabled: !!process.env.GITHUB_TOKEN, checks: "rules, no AI",
+    // Demonstration deployments keep every link to the real repositories closed (GREENLIGHT_EXTERNAL_LINKS=1 opens them).
+    externalLinks: process.env.GREENLIGHT_EXTERNAL_LINKS === "1", engineVersion: "Greenlight / CrossCheck standalone 1.0",
     fixingDisabledReason: !process.env.ANTHROPIC_API_KEY ? "Live fixing is not enabled on this deployment; the recorded session shows the same run end to end" : sandboxStatus().reason,
     // The written rules themselves (Greenlight's own words, not standards text), so a finding can show what fired.
     rules: Object.fromEntries(e.SIGNALS.map((s: any) => [s.id, { title: s.title, theme: s.theme || "governance", fix: s.fix || "" }])),

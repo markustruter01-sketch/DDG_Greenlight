@@ -980,36 +980,57 @@ body{background:#16181C}
 .coach-sweep-dot{fill:#F7FBFF;filter:drop-shadow(0 0 8px #00E5FF)}
 @media (max-width:900px){.coach-top{top:auto;bottom:max(24px,env(safe-area-inset-bottom,0px))}}
 /* The one button to press: a slow glow and breath */
-.btn-attn{position:relative;animation:btn-attn 1.9s ease-in-out infinite}
-.btn-go.btn-attn{animation-name:btn-attn-go}
-@keyframes btn-attn{0%,100%{box-shadow:0 0 0 0 rgba(0,229,255,.55),0 0 16px rgba(0,229,255,.25);transform:scale(1)}50%{box-shadow:0 0 0 12px rgba(0,229,255,0),0 0 36px rgba(0,229,255,.6);transform:scale(1.04)}}
-@keyframes btn-attn-go{0%,100%{box-shadow:0 0 0 0 rgba(79,217,154,.6),0 0 22px rgba(79,217,154,.35);transform:scale(1)}50%{box-shadow:0 0 0 12px rgba(79,217,154,0),0 0 44px rgba(79,217,154,.7);transform:scale(1.04)}}
-@media (prefers-reduced-motion:reduce){.btn-attn{animation:none;box-shadow:0 0 24px rgba(0,229,255,.5)}}
+/* A quiet cue: a thin ring that breathes, no glow, no movement. */
+.btn-attn{position:relative;box-shadow:0 0 0 1.5px rgba(0,229,255,.45);animation:btn-attn 2.8s ease-in-out infinite}
+.btn-go.btn-attn{box-shadow:0 0 0 1.5px rgba(79,217,154,.5);animation-name:btn-attn-go}
+@keyframes btn-attn{0%,100%{box-shadow:0 0 0 1.5px rgba(0,229,255,.3)}50%{box-shadow:0 0 0 2px rgba(0,229,255,.85),0 0 14px rgba(0,229,255,.18)}}
+@keyframes btn-attn-go{0%,100%{box-shadow:0 0 0 1.5px rgba(79,217,154,.35)}50%{box-shadow:0 0 0 2px rgba(79,217,154,.9),0 0 14px rgba(79,217,154,.2)}}
+@media (prefers-reduced-motion:reduce){.btn-attn{animation:none;box-shadow:0 0 0 2px rgba(0,229,255,.7)}}
 /* Pip, the guide */
-.pip{position:fixed;z-index:95;width:300px;transition:left .9s cubic-bezier(.3,.7,.2,1),top .9s cubic-bezier(.3,.7,.2,1);filter:drop-shadow(0 18px 40px rgba(0,0,0,.45))}
-.pip-body{width:64px;height:64px;animation:pip-bob 3.2s ease-in-out infinite;filter:drop-shadow(0 0 14px rgba(0,229,255,.35))}
-.pip.is-flying .pip-body{animation:pip-fly .95s ease-in-out}
+.pip{position:fixed;z-index:95;display:flex;align-items:flex-end;gap:10px;max-width:min(460px,calc(100vw - 32px));filter:drop-shadow(0 18px 40px rgba(0,0,0,.45))}
+.pip.is-bl{left:max(20px,env(safe-area-inset-left,0px));bottom:max(20px,env(safe-area-inset-bottom,0px))}
+.pip.is-br{right:max(20px,env(safe-area-inset-right,0px));bottom:max(20px,env(safe-area-inset-bottom,0px));flex-direction:row-reverse}
+.pip.is-tl{left:max(20px,env(safe-area-inset-left,0px));top:84px;align-items:flex-start}
+.pip.is-tr{right:max(20px,env(safe-area-inset-right,0px));top:84px;align-items:flex-start;flex-direction:row-reverse}
+.pip-avatar{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding-top:16px;flex:none}
+.pip-body{width:56px;height:56px;animation:pip-bob 3.2s ease-in-out infinite}
 .pip-face{display:block}
-.pip-eyes{transition:transform .5s ease}
 .pip-eye{transform-box:fill-box;transform-origin:center;animation:pip-blink 4.6s infinite}
-.pip-x{position:absolute;left:24px;top:-18px;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(6,19,26,.9);color:#F7FBFF;cursor:pointer;z-index:1}
-.pip-x:hover{border-color:#00E5FF;color:#00E5FF}
-.pip-bubble{margin-top:6px;padding:12px 16px;border-radius:18px 18px 18px 6px;background:rgba(6,19,26,.94);border:1.5px solid rgba(0,229,255,.7);box-shadow:0 0 24px rgba(0,229,255,.2);color:#F7FBFF;animation:tour-cap-in .35s ease-out}
+.pip-name{font-family:'Silkscreen','JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;color:#FF2BD6;line-height:1}
+.pip-x{position:absolute;left:50%;top:-2px;transform:translateX(-50%);display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(6,19,26,.9);color:#F7FBFF;cursor:pointer;z-index:1}
+.pip-x:hover{border-color:#FF2BD6;color:#FF2BD6}
+.pip-bubble{padding:12px 16px;border-radius:18px 18px 18px 6px;background:rgba(6,19,26,.94);border:1px solid rgba(255,255,255,.22);color:#F7FBFF;animation:tour-cap-in .35s ease-out;min-width:0}
+.pip.is-br .pip-bubble,.pip.is-tr .pip-bubble{border-radius:18px 18px 6px 18px}
+.pip.is-tl .pip-bubble{border-radius:6px 18px 18px 18px}
+.pip.is-tr .pip-bubble{border-radius:18px 6px 18px 18px}
 .pip-what{margin:0 0 6px;font-size:14px;line-height:1.4;color:#CFE3EE}
 .pip-what b{color:#F7FBFF}
-.pip-press{margin:0;font:600 17px/1.3 'Space Grotesk',sans-serif;color:#F7FBFF;text-wrap:balance}
-.pip-arrow{color:#00E5FF;margin-right:4px}
+.pip-press{margin:0;font:600 16px/1.3 'Space Grotesk',sans-serif;color:#F7FBFF;text-wrap:balance}
+.pip-arrow{color:#FF2BD6;margin-right:4px}
 .pip-also{margin:8px 0 0;font-size:12.5px;line-height:1.4;color:#8A939B}
 .pip-back{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:95;display:inline-flex;align-items:center;gap:6px;padding:6px 12px 6px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(6,19,26,.8);color:#DCE3E8;font:600 12px 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
-.pip-back:hover{border-color:#00E5FF;color:#F7FBFF}
-@keyframes pip-bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-6px) rotate(2deg)}}
-@keyframes pip-fly{0%{transform:translateY(0) rotate(0)}30%{transform:translateY(-16px) rotate(-10deg) scale(1.06)}100%{transform:translateY(0) rotate(0)}}
+.pip-back:hover{border-color:#FF2BD6;color:#F7FBFF}
+@keyframes pip-bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-5px) rotate(2deg)}}
 @keyframes pip-blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
 @media (prefers-reduced-motion:reduce){.pip,.pip-body,.pip-eye{animation:none;transition:none}}
-@media (max-width:640px){.pip{width:min(300px,calc(100vw - 32px))}}
-/* The lighter breath, for a button worth noticing rather than pressing */
-.btn-attn-soft{animation:btn-attn-soft 2.6s ease-in-out infinite}
-@keyframes btn-attn-soft{0%,100%{box-shadow:0 0 0 0 rgba(0,229,255,.3)}50%{box-shadow:0 0 0 6px rgba(0,229,255,0),0 0 22px rgba(0,229,255,.45)}}
+@media (max-width:640px){.pip{max-width:calc(100vw - 32px)}.pip.is-tl,.pip.is-tr{top:auto;bottom:max(20px,env(safe-area-inset-bottom,0px));align-items:flex-end}}
+
+/* Soft variant of the cue, for secondary buttons. */
+.btn-attn-soft{box-shadow:0 0 0 1px rgba(0,229,255,.3);animation:btn-attn-soft 3s ease-in-out infinite}
+@keyframes btn-attn-soft{0%,100%{box-shadow:0 0 0 1px rgba(0,229,255,.2)}50%{box-shadow:0 0 0 1.5px rgba(0,229,255,.65)}}
+
+/* The orbit hint: how to move the planet, until the viewer does. */
+.orbit-hint{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:15;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;padding:12px 18px;border-radius:16px;background:rgba(6,19,26,.72);border:1px solid rgba(255,255,255,.14);transition:opacity .4s}
+.orbit-hint.is-hidden{opacity:0}
+.orbit-hint-mouse{color:#F7FBFF;animation:orbit-hint-slide 2.4s ease-in-out infinite}
+@keyframes orbit-hint-slide{0%,100%{transform:translateX(-26px)}50%{transform:translateX(26px)}}
+.orbit-hint-title{font:600 15px 'Space Grotesk',sans-serif;color:#F7FBFF}
+.orbit-hint-keys{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;font:500 11px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#B9C3CC}
+.orbit-hint-keys b{color:#F7FBFF;font-weight:600}
+.orbit-hint-mini{position:absolute;right:12px;bottom:12px;z-index:15;pointer-events:none;display:flex;gap:12px;padding:6px 10px;border-radius:10px;background:rgba(6,19,26,.55);border:1px solid rgba(255,255,255,.1);font:500 10px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#8A939B;opacity:.85}
+.orbit-hint-mini b{color:#CFE3EE;font-weight:600}
+@media (prefers-reduced-motion:reduce){.orbit-hint-mouse{animation:none}}
+
 /* Full screen keeps the graphite ground and the controls */
 .jorbit-stage:fullscreen,.orbit-view-root:fullscreen{background:#16181C;border-radius:0}
 .jorbit-stage:fullscreen .orbit-view-root{height:100%}

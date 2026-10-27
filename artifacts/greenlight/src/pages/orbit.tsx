@@ -118,7 +118,9 @@ export default function Orbit() {
     if (!seen) setTourStatus('prompt');
   }, [run?.id, orbitReady]);
 
+  const [tourSeen, setTourSeen] = useState<boolean>(() => { try { return window.localStorage.getItem(TOUR_SEEN_KEY) === '1'; } catch { return false; } });
   const rememberTour = () => {
+    setTourSeen(true);
     try { window.localStorage.setItem(TOUR_SEEN_KEY, '1'); } catch { /* tour still works if storage is blocked */ }
   };
   const restoreTourState = (keepSnapshot = false) => {
@@ -453,7 +455,9 @@ export default function Orbit() {
   const t = counts ? tone(counts) : null;
 
   return (
-    <Shell runId={id} roadStep={2} pip={run && tourStatus === 'closed' && !target ? { id: 'orbit', what: 'Every light is one requirement. Red is serious; raised pins must be fixed.', press: 'Drag the planet, tap a light, then press Show me the plan.', target: '[data-testid="link-header-plan"]', drag: '.orbit-visual', also: 'What am I looking at? plays a two-minute tour. Needs your answers holds the questions only a person can answer.' } : null} tourHeaderHighlight={tourIndex === 8 && !['closed', 'prompt'].includes(tourStatus)}
+    <Shell runId={id} roadStep={2} pip={run && ['closed', 'prompt', 'complete'].includes(tourStatus) && !target ? (!tourSeen
+      ? { id: 'orbit-tour', what: 'Every light is one requirement. Red is serious; raised pins must be fixed.', press: 'Press What am I looking at? for the two-minute tour.', target: '[data-testid="button-play-tour"]', also: 'Drag the planet to look around.' }
+      : { id: 'orbit', what: 'Every light is one requirement. Red is serious; raised pins must be fixed.', press: 'Press Show me the plan.', target: '[data-testid="link-header-plan"]', also: 'Needs your answers holds the questions only a person can answer. Tap any light to read it.' }) : null} tourHeaderHighlight={tourIndex === 8 && !['closed', 'prompt'].includes(tourStatus)}
       guide={run && !afterName ? {
         steps: tourActiveNow
           ? ['Watch the guided tour; press Exit on the caption to take over', 'Tap any light to read what is wrong and where', 'Press Show me the plan']
@@ -511,7 +515,8 @@ export default function Orbit() {
                 setTarget(key ? { kind: 'finding', key } : null);
               }}
               onControlsReady={onOrbitControlsReady}
-              tourButton={<button className="btn btn-attn-soft !px-3 !py-1.5 text-xs" onClick={startTour} data-testid="button-play-tour">What am I looking at?</button>}
+              tourButton={<button className={`btn !px-3 !py-1.5 text-xs ${tourSeen ? '' : 'btn-attn-soft'}`} onClick={startTour} data-testid="button-play-tour">What am I looking at?</button>}
+              hint={['closed', 'complete'].includes(tourStatus) && !target}
               controlsCenter={
                 <div className="orbit-wave-switch glass" role="tablist" data-testid="wave-switch" aria-label="Readiness projection">
                   {[0, 1, 2, 3, 4].map((n) => {

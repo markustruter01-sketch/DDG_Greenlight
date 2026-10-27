@@ -45,7 +45,7 @@ export default function Signoff() {
   const guide = { steps: ['Export the fixed code. That is the whole job done.', nextWave ? `Come back for round ${nextWave.number} whenever you are ready` : 'Every round is done'], current: 0, tone: 'ok' as const };
 
   return (
-    <Shell runId={id} guide={run && !noSource ? guide : undefined} roadDone={!!run && !noSource} runMeta={run ? `${run.projectName} · done` : undefined} pip={run && !noSource ? { id: 'done', what: 'Done. Everything you can take away is on the right.', press: 'Press Export the fixed code.', target: '[data-testid="button-export"]', also: `Answer the ${left} takes you to the questions only a person can answer.` } : null}>
+    <Shell runId={id} guide={run && !noSource ? guide : undefined} roadDone={!!run && !noSource} runMeta={run ? `${run.projectName} · done` : undefined} pip={run && !noSource ? { id: 'done', corner: 'br', what: 'Done. Everything you can take away is on the right.', press: 'Press Export the fixed code.', target: '[data-testid="button-export"]', also: `Answer the ${left} takes you to the questions only a person can answer.` } : null}>
       <div className="jl">
         {q.isLoading ? <Skeleton className="h-80 w-full" /> : q.isError || !run ? <ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /> : after.loading ? (
           <section className="glass jcard is-ok" data-testid="screen-done-loading"><h1 className="jh" style={{ fontSize: 48 }}>You made it.</h1><p className="jp">Adding up what was fixed…</p><Skeleton className="h-40 w-full" /></section>

@@ -18,6 +18,7 @@ import Signoff from '@/pages/signoff';
 import Replay from '@/pages/replay';
 import How from '@/pages/how';
 import { SiteLoader } from '@/components/site-loader';
+import { LinkGuard } from '@/components/link-guard';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 
 const queryClient = new QueryClient();
@@ -129,6 +130,7 @@ function Providers() {
             </Switch>
           </RoutedErrorBoundary>
           <SiteLoader />
+          <LinkGuard />
           <Toaster />
         </TooltipProvider>
       </QueryClientProvider>

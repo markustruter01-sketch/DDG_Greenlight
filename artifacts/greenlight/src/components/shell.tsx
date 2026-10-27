@@ -107,7 +107,7 @@ export function Shell({
   roadDone?: boolean;
   /** Force which stop is current (sub-screens of a step). */
   roadStep?: number;
-  /** What Pip says on this screen. */
+  /** What Freya, the guide, says on this screen. */
   pip?: PipSpec | null;
 }) {
   const [reports, setReports] = useState(false);

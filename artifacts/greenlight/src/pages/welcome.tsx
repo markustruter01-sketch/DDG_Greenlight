@@ -5,8 +5,8 @@ import { Shell, Logo, STEPS } from '@/components/shell';
 import { Modal } from '@/components/gl';
 
 /** The 90-second explainer (public/explainer.mp4), rendered from the DDG motion kit. */
-const EXPLAINER = `${import.meta.env.BASE_URL}explainer.mp4`;
-const EXPLAINER_POSTER = `${import.meta.env.BASE_URL}explainer-poster.jpg`;
+const EXPLAINER = `${import.meta.env.BASE_URL}explainer.mp4?v=7steps`;
+const EXPLAINER_POSTER = `${import.meta.env.BASE_URL}explainer-poster.jpg?v=7steps`;
 
 const BLURBS: Record<string, string> = {
   start: 'A GitHub link or a zip.',

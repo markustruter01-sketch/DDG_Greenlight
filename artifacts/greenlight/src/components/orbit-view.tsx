@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import { Maximize2, Minimize2, Minus, Plus, RotateCcw } from 'lucide-react';
+import { Maximize2, Minimize2, Minus, Mouse, Plus, RotateCcw } from 'lucide-react';
 import type { AssessmentRun } from '@workspace/api-client-react';
 import { THREE, createOrbitScene } from '../orbit/scene.js';
 import { layout, linkedIds } from '../orbit/model.js';
@@ -77,6 +77,7 @@ export function OrbitView({
   tourButton,
   tourCaption,
   tourPrompt,
+  hint = true,
   onControlsReady,
 }: {
   run: AssessmentRun;
@@ -87,9 +88,16 @@ export function OrbitView({
   tourButton?: ReactNode;
   tourCaption?: ReactNode;
   tourPrompt?: ReactNode;
+  /** Show "drag to look around" until the viewer has moved the planet. */
+  hint?: boolean;
   onControlsReady?: (controls: OrbitControlApi | null) => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
+  // Once the viewer has moved the planet themselves, the hint shrinks to a corner.
+  const [moved, setMoved] = useState<boolean>(() => { try { return window.sessionStorage.getItem('ddg-orbit-moved') === '1'; } catch { return false; } });
+  const markMoved = () => { setMoved(true); try { window.sessionStorage.setItem('ddg-orbit-moved', '1'); } catch { /* per-session */ } };
+  const markMovedRef = useRef(markMoved);
+  markMovedRef.current = markMoved;
   const api = useRef<any>(null);
   const onPickRef = useRef(onPick);
   onPickRef.current = onPick;
@@ -446,6 +454,7 @@ export function OrbitView({
     const up = (e: PointerEvent) => {
       cv.style.cursor = 'grab';
       const click = dragging && dragging.moved < 5;
+      if (dragging && dragging.moved >= 5) markMovedRef.current();
       dragging = null;
       markManual();
       if (click) {
@@ -466,7 +475,7 @@ export function OrbitView({
     const wheel = (e: WheelEvent) => {
       e.preventDefault();
       rig.dist = Math.max(8, Math.min(60, rig.dist * Math.exp(e.deltaY * 0.0012)));
-      markManual();
+      markManual(); markMovedRef.current();
     };
     cv.addEventListener('pointerdown', down);
     cv.addEventListener('pointermove', move);
@@ -631,6 +640,16 @@ export function OrbitView({
         {tourButton && <div className="absolute right-3 top-3 z-20 flex items-center gap-2">{fullscreen && <button className="btn !px-3 !py-1.5 text-xs" onClick={toggleFullscreen} data-testid="button-exit-fullscreen"><Minimize2 size={14} /> Exit full screen</button>}{tourButton}</div>}
         {tourCaption}
         {tourPrompt}
+        {!compatibility && hint && !moved && (
+          <div className="orbit-hint" data-testid="orbit-hint" aria-hidden="true">
+            <Mouse className="orbit-hint-mouse" size={26} strokeWidth={1.6} />
+            <div className="orbit-hint-title">Drag to look around</div>
+            <div className="orbit-hint-keys"><span><b>Drag</b> · turn the planet</span><span><b>Scroll</b> · zoom</span><span><b>Click a light</b> · open it</span></div>
+          </div>
+        )}
+        {!compatibility && moved && (
+          <div className="orbit-hint-mini" data-testid="orbit-hint-mini" aria-hidden="true"><span><b>Drag</b> turn</span><span><b>Scroll</b> zoom</span><span><b>Click</b> open</span></div>
+        )}
       </div>
       <div className="orbit-controls-row">
         <div className="orbit-controls-left" aria-label="Orbit layers">
