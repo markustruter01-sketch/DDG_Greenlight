@@ -1,4 +1,4 @@
-name: Deck shots (one-off)
+name: Place shots (one-off)
 on:
   push:
     branches: [tooling/gev-shots]
@@ -7,7 +7,17 @@ permissions:
 jobs:
   shots:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        place:
+          - { q: 'Heathrow Airport', s: 'heathrow' }
+          - { q: 'Amsterdam Airport Schiphol', s: 'schiphol' }
+          - { q: 'Frankfurt Airport', s: 'frankfurt' }
+          - { q: 'Dubai International Airport', s: 'dubai' }
+          - { q: 'Port of Rotterdam', s: 'rotterdam' }
+          - { q: 'Port of Hamburg', s: 'hamburg' }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,10 +28,10 @@ jobs:
           mkdir -p out
           npm install --no-save --no-package-lock playwright@1.56.1 > /dev/null
           npx playwright install --with-deps chromium > out/install.log 2>&1 || true
-          timeout 2400 node scripts/deck-shots.mjs "$GITHUB_WORKSPACE/out" > out/run.log 2>&1 || echo "exit $?" >> out/run.log
+          timeout 1500 node scripts/place-shots.mjs "$GITHUB_WORKSPACE/out" "${{ matrix.place.q }}" "${{ matrix.place.s }}" > out/${{ matrix.place.s }}.log 2>&1 || echo "exit $?" >> out/${{ matrix.place.s }}.log
       - name: Push
         if: always()
         run: |
-          cd out && git init -q && git checkout -q -b gev-shots-out
+          cd out && rm -f install.log && git init -q && git checkout -q -b shots-${{ matrix.place.s }}
           git -c user.name=ci -c user.email=ci@local add -A && git -c user.name=ci -c user.email=ci@local commit -qm shots
-          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" gev-shots-out
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" shots-${{ matrix.place.s }}
