@@ -277,7 +277,7 @@ export function FixConsole({ source, project, wave, onExit, exitLabel }: { sourc
         </aside>
       </div>
 
-      <footer className="fc-bar glass">
+      <footer className="fc-bar glass" data-important>
         <div className="fc-pct font-head" data-testid="progress-pct">{pct}<small>%</small></div>
         <div className="fc-bar-main">
           <div className="fc-bar-line">

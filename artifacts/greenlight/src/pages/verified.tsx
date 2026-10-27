@@ -47,7 +47,7 @@ export default function Verified() {
   };
 
   return (
-    <Shell runId={id} guide={run && !noSource ? guide : undefined} runMeta={run ? `${run.projectName} · proof` : undefined} pip={run && !noSource ? (afterParam && !afterParam.includes(',') && DEMO_WAVES.length > 1 ? { id: 'proof-all', corner: 'br', what: 'The same code checked again. This is one round.', press: 'Press All rounds.', target: '[data-testid="button-waves-all-rounds"]', also: 'The audit document lists every line changed.' } : { id: 'proof', corner: 'br', what: `The same code checked again. Not 100%: ${counts?.unanswered ?? 0} items need a person, because the standards say so.`, press: 'Press Sign it off.', target: '[data-testid="link-signoff"]', also: 'The audit document lists every requirement and every line changed.' }) : null}>
+    <Shell runId={id} guide={run && !noSource ? guide : undefined} runMeta={run ? `${run.projectName} · proof` : undefined} pip={run && !noSource ? (afterParam && !afterParam.includes(',') && DEMO_WAVES.length > 1 ? { id: 'proof-all', what: 'The same code checked again. This is one round.', press: 'Press All rounds.', target: '[data-testid="button-waves-all-rounds"]', also: 'The audit document lists every line changed.' } : { id: 'proof', what: `The same code checked again. Not 100%: ${counts?.unanswered ?? 0} items need a person, because the standards say so.`, press: 'Press Sign it off.', target: '[data-testid="link-signoff"]', also: 'The audit document lists every requirement and every line changed.' }) : null}>
       <div className="jl">
         {q.isLoading || after.loading ? <Skeleton className="h-80 w-full" /> : q.isError || !run ? <ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /> : noSource ? (
           <section className="glass jcard" data-testid="screen-proof-empty">
@@ -86,7 +86,7 @@ export default function Verified() {
                   ) : lastRec?.pullRequest ? <a className="btn btn-quiet" href={lastRec.pullRequest} target="_blank" rel="noreferrer" data-testid="button-review-pr"><GitPullRequest size={15} /> The pull request for round {lastRec.wave}</a> : null}
                 </div>
               </div>
-              <div className="jbars">
+              <div className="jbars" data-important>
                 <div className="flex flex-wrap items-center justify-between gap-2"><span className="jnote">Per standard · before → after</span><WaveSwitch page="verified" runId={id} after={afterParam} /></div>
                 {keys.map((k) => {
                   const b = after.readinessBefore[k] ?? 0, a = after.readinessAfter[k] ?? b;

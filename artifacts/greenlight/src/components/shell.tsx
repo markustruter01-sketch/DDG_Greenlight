@@ -5,7 +5,7 @@ import { Show, UserButton } from '@clerk/react';
 import { useListProjects } from '@workspace/api-client-react';
 import { ReportsModal } from '@/components/reports';
 import { Guide, type GuideSpec } from '@/components/guide';
-import { Pip, type PipSpec } from '@/components/pip';
+import { Pip, type PipSpec, usePipOff } from '@/components/pip';
 
 const base = import.meta.env.BASE_URL;
 
@@ -57,11 +57,11 @@ function stepOfPath(path: string): number {
   return -1;
 }
 
-export function Road({ runId, done, current }: { runId?: string; done?: boolean; current?: number }) {
+export function Road({ runId, done, current, compact = false }: { runId?: string; done?: boolean; current?: number; compact?: boolean }) {
   const [path] = useLocation();
   const now = current ?? stepOfPath(path);
   return (
-    <nav className={`road ${done ? 'is-done' : ''}`} aria-label="Where you are">
+    <nav className={`road ${compact ? 'is-compact' : ''} ${done ? 'is-done' : ''}`} aria-label="Where you are">
       {STEPS.map((s, i) => {
         const state = i === now ? 'now' : done || i < now ? 'ok' : 'todo';
         const reachable = i <= 1 || !!runId;
@@ -71,8 +71,9 @@ export function Road({ runId, done, current }: { runId?: string; done?: boolean;
             <span>{s.label}</span>
           </>
         );
+        const title = `Step ${i + 1}: ${s.label}`;
         return reachable ? (
-          <Link key={s.key} href={s.path(runId)} className={`stop is-${state}`} aria-current={state === 'now' ? 'step' : undefined} aria-label={`Step ${i + 1}: ${s.label}`} data-testid={`link-footer-${s.key}`} data-tour-target={`nav-${s.key}`}>
+          <Link key={s.key} href={s.path(runId)} className={`stop is-${state}`} aria-current={state === 'now' ? 'step' : undefined} aria-label={title} title={title} data-testid={`link-footer-${s.key}`} data-tour-target={`nav-${s.key}`}>
             {inner}
           </Link>
         ) : (
@@ -111,6 +112,7 @@ export function Shell({
   pip?: PipSpec | null;
 }) {
   const [reports, setReports] = useState(false);
+  const pipOff = usePipOff();
   const projects = useListProjects();
   const latest = projects.data?.[0]?.latestRunId;
   const rid = runId ?? latest;
@@ -124,9 +126,10 @@ export function Shell({
         <Link href="/" className="flex items-center gap-3" data-testid="link-home">
           <Logo />
           <span className="font-head text-lg font-semibold">Greenlight</span>
-          {runMeta && <span className="lbl hidden truncate !normal-case !tracking-normal sm:block">{runMeta}</span>}
+          {runMeta && <span className="lbl header-meta hidden truncate !normal-case !tracking-normal sm:block">{runMeta}</span>}
         </Link>
-        <div className="flex min-w-0 items-center justify-end gap-2">
+        <Road runId={rid} done={roadDone} current={roadStep} compact />
+        <div className="flex min-w-0 shrink-0 items-center justify-end gap-2">
           <Link href="/how-it-checks" className="lbl rounded-xl border px-3 py-2 hover:text-[#00E5FF]" style={{ borderColor: 'rgba(255,255,255,.2)', background: 'rgba(0,0,0,.28)' }} data-testid="text-checks" data-tour-target="rules-badge" data-tour-highlight={tourHeaderHighlight ? 'true' : undefined} title="How Greenlight checks">
             Checks: code, not AI
           </Link>
@@ -142,8 +145,8 @@ export function Shell({
           )}
         </div>
       </header>}
-      {chrome && <Road runId={rid} done={roadDone} current={roadStep} />}
-      {chrome && guide && <Guide spec={guide} />}
+      {/* Freya and the one-line guide say the same thing: the strip shows only while she is off. */}
+      {chrome && guide && (!pip || pipOff) && <Guide spec={guide} />}
       <main className="app-main relative z-10 flex flex-1 flex-col">{children}</main>
       {pip && <Pip spec={pip} />}
       {runId && <ReportsModal runId={runId} open={reports} onClose={() => setReports(false)} />}

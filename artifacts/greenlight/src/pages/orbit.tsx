@@ -159,12 +159,25 @@ export default function Orbit() {
     setTourRunId((value) => value + 1);
     setTourStatus('playing');
   };
+  // The tour plays with the browser in full screen (the whole app, so the
+  // arrows and the timer come too); leaving the tour leaves full screen.
+  const tourFull = useRef(false);
+  const enterTourFullscreen = () => {
+    if (document.fullscreenElement || !document.documentElement.requestFullscreen) return;
+    document.documentElement.requestFullscreen().then(() => { tourFull.current = true; }).catch(() => { /* not allowed here: play in the window */ });
+  };
+  const leaveTourFullscreen = () => {
+    if (tourFull.current && document.fullscreenElement === document.documentElement) void document.exitFullscreen?.();
+    tourFull.current = false;
+  };
   const startTour = () => {
+    enterTourFullscreen();
     if (tourStatus === 'complete' && savedTour.current) {
       void restoreTourState(true).then(beginTourPlayback);
     } else beginTourPlayback();
   };
   const finishTour = () => {
+    leaveTourFullscreen();
     rememberTour();
     narrator.stop();
     orbitControls.current?.showcaseLinks(null);
@@ -456,8 +469,8 @@ export default function Orbit() {
 
   return (
     <Shell runId={id} roadStep={2} pip={run && ['closed', 'prompt', 'complete'].includes(tourStatus) && !target ? (!tourSeen
-      ? { id: 'orbit-tour', what: 'Every light is one requirement. Red is serious; raised pins must be fixed.', press: 'Press What am I looking at? for the two-minute tour.', target: '[data-testid="button-play-tour"]', also: 'Drag the planet to look around.' }
-      : { id: 'orbit', what: 'Every light is one requirement. Red is serious; raised pins must be fixed.', press: 'Press Show me the plan.', target: '[data-testid="link-header-plan"]', also: 'Needs your answers holds the questions only a person can answer. Tap any light to read it.' }) : null} tourHeaderHighlight={tourIndex === 8 && !['closed', 'prompt'].includes(tourStatus)}
+      ? { id: 'orbit-tour', what: 'Every light is one requirement. Red is serious; raised pins must be fixed.', press: 'Press What am I looking at? The two-minute tour plays full screen.', target: '[data-testid="button-play-tour"]' }
+      : { id: 'orbit', what: 'Every light is one requirement. Red is serious; raised pins must be fixed.', press: 'Press Show me the plan.', target: '[data-testid="link-header-plan"]', also: 'Tap any light to read it.' }) : null} tourHeaderHighlight={tourIndex === 8 && !['closed', 'prompt'].includes(tourStatus)}
       guide={run && !afterName ? {
         steps: tourActiveNow
           ? ['Watch the guided tour; press Exit on the caption to take over', 'Tap any light to read what is wrong and where', 'Press Show me the plan']
@@ -477,14 +490,14 @@ export default function Orbit() {
               <span className="h-5 w-5 shrink-0 rounded-full" style={{ background: t!.color, boxShadow: `0 0 18px ${t!.color}90` }} data-testid="verdict-light" />
               <div className="min-w-0">
                 <div className="font-head text-lg font-semibold leading-tight" data-testid="text-verdict">{projected ? t!.word : `${openCount} to fix · ${serious} serious`}</div>
-                <div className="jnote">{projected ? `Projected after wave ${wave} · not measured` : run.isDemo ? 'Sample project · every light is one requirement' : 'Every light is one requirement'}</div>
+                <div className="jnote hidden 2xl:block">{projected ? `Projected after wave ${wave} · not measured` : run.isDemo ? 'Sample project · every light is one requirement' : 'Every light is one requirement'}</div>
               </div>
             </div>
             <div className={`flex min-w-0 flex-1 flex-wrap items-center gap-2 ${readinessHighlight ? 'is-tour-highlight rounded-xl p-1' : ''}`} data-testid="readiness-rings">
               {run.standards.map((s, i) => {
                 const value = afterReadiness?.[s.short] ?? pc(w ? w.readiness[s.id] ?? s.readiness : s.readiness);
-                return <button key={s.id} onClick={() => setTarget({ kind: 'standard', id: s.id })} className="jpill !py-1 !pl-1 !pr-3 !text-[13px] !font-medium" title={s.name} data-testid={`button-standard-${s.id}`}>
-                  <Gauge value={value} size={30} color={RING_COLORS[i % RING_COLORS.length]} label="" /> {s.short} <b style={{ color: value < 40 ? '#FF5C6E' : value < 75 ? '#FFA62B' : '#4FD99A' }}>{value}%</b>
+                return <button key={s.id} onClick={() => setTarget({ kind: 'standard', id: s.id })} className="jpill !gap-1.5 !py-0.5 !pl-0.5 !pr-2.5 !text-[12px] !font-medium" title={s.name} data-testid={`button-standard-${s.id}`}>
+                  <Gauge value={value} size={22} color={RING_COLORS[i % RING_COLORS.length]} label="" /> {s.short} <b style={{ color: value < 40 ? '#FF5C6E' : value < 75 ? '#FFA62B' : '#4FD99A' }}>{value}%</b>
                 </button>;
               })}
             </div>

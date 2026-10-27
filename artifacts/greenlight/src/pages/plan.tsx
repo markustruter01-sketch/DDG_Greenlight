@@ -80,7 +80,7 @@ export default function Plan() {
   };
 
   return (
-    <Shell runId={id} guide={guide} runMeta={run ? `${run.projectName} · the plan` : undefined} pip={run ? (enabled ? { id: 'plan', corner: 'br', what: 'The fixes, grouped into rounds. Biggest wins first.', press: `Press Fix round ${wave || 1} with Claude.`, target: '[data-testid="button-start-fix"]' } : { id: 'plan', corner: 'br', what: 'The fixes, grouped into rounds. Biggest wins first.', press: `Press Watch round ${wave || 1} recorded.`, target: '[data-testid="link-recorded-fix"]', also: 'Live fixing is off on this site; the recording is a real run, replayed.' }) : null}>
+    <Shell runId={id} guide={guide} runMeta={run ? `${run.projectName} · the plan` : undefined} pip={run ? (enabled ? { id: 'plan', what: 'The fixes, grouped into rounds. Biggest wins first.', press: `Press Fix round ${wave || 1} with Claude.`, target: '[data-testid="button-start-fix"]' } : { id: 'plan', what: 'The fixes, grouped into rounds. Biggest wins first.', press: `Press Watch round ${wave || 1} recorded.`, target: '[data-testid="link-recorded-fix"]', also: 'Live fixing is off on this site; the recording is a real run, replayed.' }) : null}>
       <div className="jl">
         {q.isLoading ? <Skeleton className="h-80 w-full" /> : q.isError || !run ? <ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /> : (
           <section className="glass jcard" data-testid="screen-plan">
