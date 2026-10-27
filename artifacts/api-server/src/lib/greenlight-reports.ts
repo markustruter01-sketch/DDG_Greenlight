@@ -58,7 +58,7 @@ function reportLines(run: any, kind: string, title: string) {
   const standard = run.standards.find((s: any) => s.id === t.standardId);
   const findings = t.standardId ? run.findings.filter((f: any) => f.standardId === t.standardId) : run.findings;
   const lines = [
-    title, `Project: ${run.projectName}`, `Source: ${run.source}`, `Run: ${run.id}`, `Assessed: ${run.assessedAt}`,
+    title, `Project: ${run.projectName}`, `Source: ${String(run.source).replace(/(github\.com\/)[^/\s]+\//i, "$1…/")}`, `Run: ${run.id}`, `Assessed: ${run.assessedAt}`,
     "Checks: deterministic rules, no AI. Claude is used only for optional remediation.",
     `Verdict: ${run.verdict} | Readiness: ${run.readiness}% of rated requirements (unrated requirements excluded).`,
     `Counts: ${JSON.stringify(run.counts)}`,

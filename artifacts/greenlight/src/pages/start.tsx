@@ -14,7 +14,7 @@ import { useGate } from '@/hooks/use-gate';
 import { Shell } from '@/components/shell';
 import { CompareModal } from '@/components/compare';
 import { Dot, ErrorBlock, Gauge, Modal, Skeleton } from '@/components/gl';
-import { pc, uploadZip } from '@/lib/greenlight';
+import { pc, publicSource, uploadZip } from '@/lib/greenlight';
 import { CLASSIFICATION_CHOICES, LEVEL_CHOICES, MATURITY_CHOICES, STANDARD_INFO, levelDisplay, plainName, type LevelChoice } from '@/lib/standard-info';
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -198,7 +198,7 @@ export default function Start({ auth }: { auth?: 'in' | 'up' }) {
             <p className="jp">Paste a GitHub link, or drop in a zip. Nothing is changed until you say so.</p>
             <div className="flex flex-wrap items-stretch gap-3">
               {mode === 'github' ? (
-                <label className={`jfield flex-1 ${sourceOk ? 'is-ok' : ''}`}><span className="jnote" style={{ color: '#7CC9E8' }}>GitHub</span><input type="url" placeholder="https://github.com/your-team/your-project" aria-label="GitHub address" value={github} onChange={(e) => setGithub(e.target.value)} data-testid="input-github" /></label>
+                <label className={`jfield flex-1 ${sourceOk ? 'is-ok' : ''}`}><span className="jnote" style={{ color: '#7CC9E8' }}>GitHub</span><input type="url" placeholder="https://github.com/your-team/your-project" aria-label="GitHub address" value={reassess && github === reassess.source ? publicSource(github) : github} onChange={(e) => { if (reassess && github === reassess.source) setReassess(null); setGithub(e.target.value); }} data-testid="input-github" /></label>
               ) : (
                 <button type="button" className={`jfield flex-1 text-left ${file ? 'is-ok' : ''}`} onClick={() => fileRef.current?.click()} data-testid="button-choose-zip"><FileArchive size={20} /><span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 16 }}>{file ? `${file.name} · ${(file.size / 1048576).toFixed(1)} MB` : 'Choose a .zip of the source folder'}</span></button>
               )}

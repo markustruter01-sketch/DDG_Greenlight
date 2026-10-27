@@ -1,7 +1,7 @@
 import type { AssessmentRun } from '@workspace/api-client-react';
 import type { AfterView } from '@/lib/after';
 import type { FixRecording } from '@/lib/fix-events';
-import { STATUS_WORD, lineDiff } from '@/lib/greenlight';
+import { STATUS_WORD, lineDiff, publicSource } from '@/lib/greenlight';
 import { plainName } from '@/lib/standard-info';
 
 /**
@@ -107,7 +107,7 @@ small{color:#555}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px
 </style></head><body><main>
 <div class="k">Greenlight audit document · checked by code, not AI</div>
 <h1>${esc(run.projectName)}</h1>
-<p>Source: <code>${esc(run.source)}</code><br>Checked ${esc(new Date(run.assessedAt).toLocaleDateString('en-AU', { day: '2-digit', month: 'long', year: 'numeric' }))} · this document ${esc(today)} · ${rounds.length ? `round${rounds.length === 1 ? '' : 's'} ${rounds.map((r) => r.wave).join(', ')}` : 'no fix round'} · ${after.mode === 'recording' ? 'recorded fix session' : 'live fix run'}</p>
+<p>Source: <code>${esc(publicSource(run.source))}</code><br>Checked ${esc(new Date(run.assessedAt).toLocaleDateString('en-AU', { day: '2-digit', month: 'long', year: 'numeric' }))} · this document ${esc(today)} · ${rounds.length ? `round${rounds.length === 1 ? '' : 's'} ${rounds.map((r) => r.wave).join(', ')}` : 'no fix round'} · ${after.mode === 'recording' ? 'recorded fix session' : 'live fix run'}</p>
 <p>Every rating in this document comes from written rules in code that read the repository. Claude was used for one thing: writing the changes in section 5, each of which was approved by a person and then re-checked by the same rules.</p>
 
 <h2>1. The numbers</h2>

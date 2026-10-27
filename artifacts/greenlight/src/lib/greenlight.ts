@@ -79,6 +79,9 @@ export function tone(c: { failed: number; blocking: number; partial: number; una
 }
 
 /** How many files the assessment read, from whatever shape the inventory has. */
+/** A GitHub address with its owner hidden, for anything shown or downloaded (this is a demonstration deployment). */
+export const publicSource = (source: string): string => source.replace(/(github\.com\/)[^/\s]+\//i, '$1…/');
+
 export const countFiles = (inventory: unknown): number | null => {
   if (Array.isArray(inventory)) return inventory.length;
   if (inventory && typeof inventory === 'object') {
