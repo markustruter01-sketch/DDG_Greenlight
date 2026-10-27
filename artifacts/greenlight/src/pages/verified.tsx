@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearch } from 'wouter';
-import { ArrowRight, FileCheck2, GitPullRequest, Orbit as OrbitIcon, Package } from 'lucide-react';
+import { ArrowRight, FileCheck2, FileSearch, FileSpreadsheet, GitPullRequest, Orbit as OrbitIcon, Package } from 'lucide-react';
 import { getGetAssessmentQueryKey, useGetAssessment } from '@workspace/api-client-react';
 import { Shell, DEMO_RECORDING, DEMO_WAVES } from '@/components/shell';
 import { WaveSwitch } from '@/components/wave-switch';
@@ -9,6 +9,7 @@ import { useAfter } from '@/lib/after';
 import { download, reportUrl, tally } from '@/lib/greenlight';
 import { plainName } from '@/lib/standard-info';
 import { fmtClock } from '@/lib/fix-events';
+import { downloadAuditCsv, openAuditDocument } from '@/lib/audit-doc';
 
 const colorFor = (v: number) => (v < 40 ? '#FF5C6E' : v < 75 ? '#FFA62B' : '#4FD99A');
 
@@ -46,7 +47,7 @@ export default function Verified() {
   };
 
   return (
-    <Shell runId={id} guide={run && !noSource ? guide : undefined} runMeta={run ? `${run.projectName} · proof` : undefined} coach={run && !noSource ? (afterParam && !afterParam.includes(',') && DEMO_WAVES.length > 1 ? { id: 'proof-all', text: 'Press All rounds.', target: '[data-testid="button-waves-all-rounds"]' } : { id: 'proof', text: 'Press Sign it off.', target: '[data-testid="link-signoff"]' }) : null}>
+    <Shell runId={id} guide={run && !noSource ? guide : undefined} runMeta={run ? `${run.projectName} · proof` : undefined} pip={run && !noSource ? (afterParam && !afterParam.includes(',') && DEMO_WAVES.length > 1 ? { id: 'proof-all', what: 'The same code checked again. This is one round.', press: 'Press All rounds.', target: '[data-testid="button-waves-all-rounds"]', also: 'The audit document lists every line changed.' } : { id: 'proof', what: `The same code checked again. Not 100%: ${counts?.unanswered ?? 0} items need a person, because the standards say so.`, press: 'Press Sign it off.', target: '[data-testid="link-signoff"]', also: 'The audit document lists every requirement and every line changed.' }) : null}>
       <div className="jl">
         {q.isLoading || after.loading ? <Skeleton className="h-80 w-full" /> : q.isError || !run ? <ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /> : noSource ? (
           <section className="glass jcard" data-testid="screen-proof-empty">
@@ -62,9 +63,18 @@ export default function Verified() {
                 <h1 className="jh">Checked again. Proven.</h1>
                 <div className="flex items-center gap-4"><span className="jbig" style={{ color: '#8A939B', fontSize: 84 }} data-testid="text-before">{before}%</span><span style={{ fontSize: 40, color: '#4FD99A' }}>→</span><span className="jbig" style={{ color: colorFor(now), fontSize: 84 }} data-testid="text-after">{applied ? now : before}%</span></div>
                 <p className="jp" data-testid="text-proof-summary">{greened} problem{greened === 1 ? '' : 's'} gone{counts ? ` · ${counts.unanswered} need your answers` : ''}{after.tests ? ` · ${after.tests.pass.toLocaleString()} of ${after.tests.total.toLocaleString()} tests pass` : ''}{after.filesChanged ? ` · ${after.filesChanged} files` : ''}</p>
+                {counts && counts.unanswered > 0 && (
+                  <div className="ink p-3 text-sm leading-relaxed" style={{ borderColor: 'rgba(255,166,43,.5)' }} data-testid="text-why-not-100">
+                    <b style={{ color: '#FFA62B' }}>Why not 100%?</b> {counts.unanswered} requirement{counts.unanswered === 1 ? '' : 's'} can only be answered by a person: sign-offs, documents, decisions the standards say a human must make. Code can't answer those, and shouldn't. Greenlight takes you as far as code can. <Link href={`/orbit/${id}?answers`} className="underline" style={{ color: '#00E5FF' }} data-testid="link-answer-questions">Answer the {counts.unanswered}</Link>
+                  </div>
+                )}
                 <div className="flex flex-wrap items-center gap-3">
                   <Link href={`/signoff/${id}${search ? `?${search.replace(/^\?/, '')}` : ''}`} className="btn btn-go btn-big" data-testid="link-signoff">Sign it off <ArrowRight size={20} /></Link>
                   <Link href={orbitHref} className="btn btn-quiet" data-testid="link-before-after"><OrbitIcon size={15} /> Before and after on the planet</Link>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button className="btn btn-quiet" onClick={() => openAuditDocument(run, after, download)} data-testid="button-audit-document"><FileSearch size={15} /> The audit document · every requirement, every line changed</button>
+                  <button className="btn btn-quiet" onClick={() => downloadAuditCsv(run, after, download)} data-testid="button-audit-csv"><FileSpreadsheet size={15} /> Every requirement as a spreadsheet</button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {after.mode === 'fix' ? (

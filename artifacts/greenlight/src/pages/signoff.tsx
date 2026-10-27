@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams, useSearch } from 'wouter';
-import { ArrowRight, Download, FileCheck2, FileSpreadsheet, GitPullRequest, Package, Table2 } from 'lucide-react';
+import { ArrowRight, Download, FileCheck2, FileSearch, FileSpreadsheet, GitPullRequest, Package, Table2 } from 'lucide-react';
 import { getGetAssessmentQueryKey, getListReportsQueryKey, useGetAssessment, useListReports } from '@workspace/api-client-react';
 import { Shell, DEMO_RECORDING, DEMO_WAVES } from '@/components/shell';
 import { WaveSwitch } from '@/components/wave-switch';
@@ -9,6 +9,7 @@ import { useAfter } from '@/lib/after';
 import { STATUS_WORD, download, reportUrl } from '@/lib/greenlight';
 import { plainName } from '@/lib/standard-info';
 import { fmtClock } from '@/lib/fix-events';
+import { downloadAuditCsv, openAuditDocument } from '@/lib/audit-doc';
 
 /**
  * Step 7 · Done: the number, everything that was fixed, and what you can take
@@ -44,7 +45,7 @@ export default function Signoff() {
   const guide = { steps: ['Export the fixed code. That is the whole job done.', nextWave ? `Come back for round ${nextWave.number} whenever you are ready` : 'Every round is done'], current: 0, tone: 'ok' as const };
 
   return (
-    <Shell runId={id} guide={run && !noSource ? guide : undefined} roadDone={!!run && !noSource} runMeta={run ? `${run.projectName} · done` : undefined} coach={run && !noSource ? { id: 'done', text: 'Press Export the fixed code.', target: '[data-testid="button-export"]' } : null}>
+    <Shell runId={id} guide={run && !noSource ? guide : undefined} roadDone={!!run && !noSource} runMeta={run ? `${run.projectName} · done` : undefined} pip={run && !noSource ? { id: 'done', what: 'Done. Everything you can take away is on the right.', press: 'Press Export the fixed code.', target: '[data-testid="button-export"]', also: `Answer the ${left} takes you to the questions only a person can answer.` } : null}>
       <div className="jl">
         {q.isLoading ? <Skeleton className="h-80 w-full" /> : q.isError || !run ? <ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /> : after.loading ? (
           <section className="glass jcard is-ok" data-testid="screen-done-loading"><h1 className="jh" style={{ fontSize: 48 }}>You made it.</h1><p className="jp">Adding up what was fixed…</p><Skeleton className="h-40 w-full" /></section>
@@ -59,12 +60,12 @@ export default function Signoff() {
             <div className="jsplit" style={{ gridTemplateColumns: 'minmax(0,1.2fr) minmax(0,1fr)' }}>
               <div className="flex min-w-0 flex-col gap-3">
                 <h1 className="jh" style={{ fontSize: 48 }}>You made it.</h1>
-                <p className="jp" data-testid="text-done-summary">{run.projectName} went from <b style={{ color: '#8A939B' }}>{before}%</b> to <b style={{ color: '#4FD99A' }}>{now}%</b>. {greened} fix{greened === 1 ? '' : 'es'}, every one checked by code and approved by you.{left ? ` The last ${left} are questions only your team can answer.` : ''}</p>
+                <p className="jp" data-testid="text-done-summary">{run.projectName} went from <b style={{ color: '#8A939B' }}>{before}%</b> to <b style={{ color: '#4FD99A' }}>{now}%</b>. {greened} fix{greened === 1 ? '' : 'es'}, every one checked by code and approved by you.{left ? ` The last ${left} are questions only your team can answer: the standards ask for sign-offs, documents and decisions a person must make. Code can't do those, and shouldn't.` : ''}</p>
                 <WaveSwitch page="signoff" runId={id} after={afterParam} />
                 <div className="flex flex-col items-start gap-3">
                   <button className="btn btn-go btn-big" style={{ fontSize: 24, padding: '20px 36px' }} onClick={() => setExportOpen(true)} data-testid="button-export"><Download size={22} /> Export the fixed code</button>
                   <div className="flex flex-wrap gap-2">
-                    {left > 0 && <Link href={`/orbit/${id}`} className="btn btn-quiet" data-testid="link-answers">Answer the {left}</Link>}
+                    {left > 0 && <Link href={`/orbit/${id}?answers`} className="btn btn-quiet" data-testid="link-answers">Answer the {left}</Link>}
                     <button className="btn btn-quiet" onClick={() => setListOpen(true)} data-testid="button-fixed-list"><Table2 size={15} /> Everything that was fixed</button>
                     {nextWave && <Link href={`/plan/${id}`} className="btn btn-quiet" data-testid="link-next-wave">Round {nextWave.number} next · {nextWave.fixCount} fixes</Link>}
                     <Link href="/start" className="btn btn-quiet" data-testid="link-back-start">Start again</Link>
@@ -76,8 +77,9 @@ export default function Signoff() {
                 {prs.map((p) => <a key={p.url} className="jout" href={p.url} target="_blank" rel="noreferrer" data-testid={`link-pr-${p.wave}`}><GitPullRequest size={18} style={{ color: '#4FD99A' }} /> Round {p.wave} as a pull request on your GitHub</a>)}
                 {!prs.length && <span className="jout" style={{ opacity: .6 }}><GitPullRequest size={18} /> No pull request for this run</span>}
                 <button className="jout" disabled={!after.downloadUrl} onClick={() => after.downloadUrl && download(after.downloadUrl)} data-testid="button-export-zip"><Package size={18} style={{ color: '#7CC9E8' }} /> The fixed code as a zip{after.downloadUrl ? '' : ' · live runs only'}</button>
+                <button className="jout" onClick={() => openAuditDocument(run, after, download)} data-testid="button-audit-document"><FileSearch size={18} style={{ color: '#00E5FF' }} /> The audit document: every requirement and every line changed, before and after</button>
                 <button className="jout" disabled={!after.verificationPdfUrl && !report('pdf')} onClick={() => { const u = after.verificationPdfUrl ?? report('pdf')?.url; if (u) download(reportUrl(u, 'pdf')); }} data-testid="button-verification-report"><FileCheck2 size={18} style={{ color: '#FFA62B' }} /> The report for your assurance team (PDF)</button>
-                <button className="jout" disabled={!report('xlsx')} onClick={() => { const r = report('xlsx'); if (r) download(reportUrl(r.url, 'xlsx')); }} data-testid="button-trace-sheet"><FileSpreadsheet size={18} style={{ color: '#B9C3CC' }} /> Every check, clause by clause, as a spreadsheet</button>
+                <button className="jout" onClick={() => downloadAuditCsv(run, after, download)} data-testid="button-trace-sheet"><FileSpreadsheet size={18} style={{ color: '#B9C3CC' }} /> Every requirement, before and after, as a spreadsheet</button>
                 <span className="jnote" style={{ marginTop: 6 }}>{after.filesChanged} files · <span style={{ color: '#4FD99A' }}>+{after.linesAdded.toLocaleString()}</span> / <span style={{ color: '#FF8C9A' }}>−{after.linesRemoved.toLocaleString()}</span>{after.tests ? ` · ${after.tests.pass.toLocaleString()} / ${after.tests.total.toLocaleString()} tests` : ''}{after.durationMs ? ` · ${fmtClock(after.durationMs)}` : ''}{after.costUsd != null ? ` · $${after.costUsd.toFixed(2)}` : ''}</span>
               </div>
             </div>

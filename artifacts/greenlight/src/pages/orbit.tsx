@@ -104,7 +104,7 @@ export default function Orbit() {
 
   useEffect(() => {
     setWave(0);
-    setTarget(null);
+    setTarget(new URLSearchParams(search).has('answers') ? { kind: 'theme', id: 'answers' } : null);
     setPicked(null);
     setTourStatus('closed');
     setTourIndex(-1);
@@ -453,7 +453,7 @@ export default function Orbit() {
   const t = counts ? tone(counts) : null;
 
   return (
-    <Shell runId={id} roadStep={2} coach={run && tourStatus === 'closed' && !target ? { id: 'orbit', text: 'Drag the planet. Tap a light. Then press Show me the plan.', target: '[data-testid="link-header-plan"]', drag: '.orbit-visual' } : null} tourHeaderHighlight={tourIndex === 8 && !['closed', 'prompt'].includes(tourStatus)}
+    <Shell runId={id} roadStep={2} pip={run && tourStatus === 'closed' && !target ? { id: 'orbit', what: 'Every light is one requirement. Red is serious; raised pins must be fixed.', press: 'Drag the planet, tap a light, then press Show me the plan.', target: '[data-testid="link-header-plan"]', drag: '.orbit-visual', also: 'What am I looking at? plays a two-minute tour. Needs your answers holds the questions only a person can answer.' } : null} tourHeaderHighlight={tourIndex === 8 && !['closed', 'prompt'].includes(tourStatus)}
       guide={run && !afterName ? {
         steps: tourActiveNow
           ? ['Watch the guided tour; press Exit on the caption to take over', 'Tap any light to read what is wrong and where', 'Press Show me the plan']
@@ -511,7 +511,7 @@ export default function Orbit() {
                 setTarget(key ? { kind: 'finding', key } : null);
               }}
               onControlsReady={onOrbitControlsReady}
-              tourButton={<button className="btn !px-3 !py-1.5 text-xs" onClick={startTour} data-testid="button-play-tour">What am I looking at?</button>}
+              tourButton={<button className="btn btn-attn-soft !px-3 !py-1.5 text-xs" onClick={startTour} data-testid="button-play-tour">What am I looking at?</button>}
               controlsCenter={
                 <div className="orbit-wave-switch glass" role="tablist" data-testid="wave-switch" aria-label="Readiness projection">
                   {[0, 1, 2, 3, 4].map((n) => {

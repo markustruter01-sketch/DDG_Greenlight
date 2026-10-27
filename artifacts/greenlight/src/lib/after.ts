@@ -16,6 +16,8 @@ export type AfterView = {
   loading: boolean;
   fixRun?: FixRun;
   recording?: FixRecording | null;
+  /** Every recording applied, in order (recording mode). */
+  recordings: FixRecording[];
   verification?: AssessmentRun;
   /** finding key → status, after the fix (baseline where nothing changed) */
   statusesAfter: Record<string, string>;
@@ -53,7 +55,7 @@ export function useAfter(run: AssessmentRun | undefined, search: string): AfterV
     const statusesBefore = Object.fromEntries((run?.findings ?? []).map((f) => [f.key, f.status]));
     const readinessBefore = Object.fromEntries((run?.standards ?? []).map((s) => [s.short, pc(s.readiness)]));
     const empty: AfterView = {
-      mode: null, loading: false, statusesAfter: statusesBefore, statusesBefore, readinessBefore, readinessAfter: readinessBefore,
+      mode: null, loading: false, recordings: [], statusesAfter: statusesBefore, statusesBefore, readinessBefore, readinessAfter: readinessBefore,
       changedKeys: [], verdictBefore: run?.verdict ?? '', verdictAfter: run?.verdict ?? '', wave: 0, filesChanged: 0, linesAdded: 0, linesRemoved: 0,
       durationMs: 0, costUsd: null, tests: null,
     };
@@ -82,7 +84,7 @@ export function useAfter(run: AssessmentRun | undefined, search: string): AfterV
         if (m) { pass = Number(m[1]); total = Number(m[2]); testsSeen = true; }
       }
       return {
-        ...empty, mode: 'recording', recording: last, statusesAfter, readinessBefore: readinessB, readinessAfter,
+        ...empty, mode: 'recording', recording: last, recordings: list, statusesAfter, readinessBefore: readinessB, readinessAfter,
         changedKeys: Object.keys(changed), verdictBefore: first.outcome.verdictBefore, verdictAfter: last.outcome.verdictAfter,
         wave: last.wave, filesChanged: files, linesAdded: add, linesRemoved: del,
         durationMs: duration, costUsd: costSeen ? cost : null, tests: testsSeen ? { pass, total } : null,

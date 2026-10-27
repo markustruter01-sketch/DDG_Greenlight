@@ -179,12 +179,14 @@ export default function Start({ auth }: { auth?: 'in' | 'up' }) {
   );
 
   return (
-    <Shell guide={guide} roadStep={stage === 'code' ? 0 : 1} coach={
+    <Shell guide={guide} roadStep={stage === 'code' ? 0 : 1} pip={
       stage === 'code'
-        ? (saved && demo ? { id: 'start-open', text: `Press Open on ${demo.name}.`, target: `[data-testid="link-open-${demo.id}"]` } : { id: 'start-saved', text: 'Press Saved projects.', target: '[data-testid="button-saved-toggle"]' })
+        ? (saved && demo
+          ? { id: 'start-open', what: 'The sample project is already checked.', press: `Press Open on ${demo.name}.`, target: `[data-testid="link-open-${demo.id}"]` }
+          : { id: 'start-saved', what: 'This is where your code goes in: a GitHub link or a zip.', press: 'For the walk-through, press Saved projects.', target: '[data-testid="button-saved-toggle"]', also: 'Next · pick the standards is the normal path for your own code.' })
         : stage === 'standards'
-          ? { id: 'standards', text: questions ? 'Keep them. Press Next.' : 'Keep them. Press Check my code.', target: questions ? '[data-testid="link-next-levels"]' : '[data-testid="button-assess"]' }
-          : { id: 'levels', text: 'Leave the usual. Press Check my code.', target: '[data-testid="button-assess"]' }
+          ? { id: 'standards', what: 'The standards your code is checked against. Six are chosen for you.', press: questions ? 'Keep them. Press Next.' : 'Keep them. Press Check my code.', target: questions ? '[data-testid="link-next-levels"]' : '[data-testid="button-assess"]', also: 'ⓘ explains any of them in plain words.' }
+          : { id: 'levels', what: 'How strict each standard is. The usual is already set.', press: 'Press Check my code.', target: '[data-testid="button-assess"]' }
     }>
       <div className="jl">
         {stage === 'code' && (

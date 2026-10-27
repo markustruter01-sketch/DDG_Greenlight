@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import { Maximize2, Minus, Plus } from 'lucide-react';
+import { Maximize2, Minimize2, Minus, Plus, RotateCcw } from 'lucide-react';
 import type { AssessmentRun } from '@workspace/api-client-react';
 import { THREE, createOrbitScene } from '../orbit/scene.js';
 import { layout, linkedIds } from '../orbit/model.js';
@@ -582,6 +582,18 @@ export function OrbitView({
     }
   };
   const reset = () => { void api.current?.controls.home(); };
+  // Full screen: the stage around the planet (so pop-ups come too), else this view.
+  const [fullscreen, setFullscreen] = useState(false);
+  useEffect(() => {
+    const on = () => setFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', on);
+    return () => document.removeEventListener('fullscreenchange', on);
+  }, []);
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) { void document.exitFullscreen?.(); return; }
+    const el = (host.current?.closest('.jorbit-stage') ?? host.current?.closest('.orbit-view-root')) as HTMLElement | null;
+    void el?.requestFullscreen?.().catch(() => { /* not allowed here: nothing to do */ });
+  };
   const hf = hover ? byKey.get(hover.id) : null;
 
   return (
@@ -616,7 +628,7 @@ export function OrbitView({
           <span style={{ color: '#00E5FF' }} data-tour-target="ring-sec">Security</span>
           <span style={{ color: '#F7FBFF' }} data-tour-target="ring-ai">AI</span>
         </div>
-        {tourButton && <div className="absolute right-3 top-3 z-20">{tourButton}</div>}
+        {tourButton && <div className="absolute right-3 top-3 z-20 flex items-center gap-2">{fullscreen && <button className="btn !px-3 !py-1.5 text-xs" onClick={toggleFullscreen} data-testid="button-exit-fullscreen"><Minimize2 size={14} /> Exit full screen</button>}{tourButton}</div>}
         {tourCaption}
         {tourPrompt}
       </div>
@@ -643,7 +655,8 @@ export function OrbitView({
           <div className="orbit-zoom">
             <button className="btn !p-1.5" onClick={() => zoom(0.8)} aria-label="Zoom in" data-testid="button-orbit-zoom-in"><Plus size={14} /></button>
             <button className="btn !p-1.5" onClick={() => zoom(1.25)} aria-label="Zoom out" data-testid="button-orbit-zoom-out"><Minus size={14} /></button>
-            <button className="btn !p-1.5" onClick={reset} aria-label="Reset view" data-testid="button-orbit-reset"><Maximize2 size={14} /></button>
+            <button className="btn !p-1.5" onClick={reset} aria-label="Reset view" title="Reset view" data-testid="button-orbit-reset"><RotateCcw size={14} /></button>
+            <button className="btn !p-1.5" onClick={toggleFullscreen} aria-label={fullscreen ? 'Exit full screen' : 'Full screen'} title={fullscreen ? 'Exit full screen' : 'Full screen'} data-testid="button-orbit-fullscreen">{fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</button>
           </div>
         </div>
       </div>
