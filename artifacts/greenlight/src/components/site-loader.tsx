@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 
 /**
- * The 5-second DDG loader, played once per browser session over the
- * platform background on first arrival. The transparent VP9 render sits on
- * the landscape; browsers without VP9 alpha (Safari) get the opaque H.264
- * render. When it ends (or 6 s pass, whichever first) it fades and the app
- * underneath is already there.
+ * The 5-second DDG loader, played once per browser session on first
+ * arrival: the animated graphics alone on the app's dark-grey ground. The
+ * transparent VP9 render sits directly on that ground; browsers without VP9
+ * alpha (Safari) get an H.264 render composited onto the same ground. When it
+ * ends (or 6 s pass, whichever first) it fades and the app is already there.
  */
 const SEEN = 'ddg-greenlight-loader-played';
 const base = import.meta.env.BASE_URL;
@@ -35,7 +35,6 @@ export function SiteLoader() {
   if (state === 'done' || state === 'idle') return null;
   return (
     <div className={`site-loader ${state === 'fading' ? 'is-fading' : ''}`} aria-hidden="true" data-testid="site-loader">
-      <div className="site-loader-bg" style={{ backgroundImage: `url(${base}vestrahorn.webp)` }} />
       <video
         className="site-loader-video"
         autoPlay muted playsInline preload="auto"

@@ -839,7 +839,7 @@ body{background:#16181C}
 .ink-deep,.fc-term,.field{background:rgba(0,0,0,.38)!important}
 .orbit-workspace{background:rgba(0,0,0,.22)}
 .glass,.btn,.float-nav-btn,.tp-label,.fc-top,.fc-bar{text-shadow:none}
-.site-loader{background:#16181C}
+.site-loader{background-color:#16181C;background-image:radial-gradient(1100px 700px at 18% 0%,rgba(255,255,255,.06),transparent 60%),radial-gradient(900px 600px at 90% 100%,rgba(255,255,255,.04),transparent 60%),linear-gradient(180deg,#1A1D21,#121417)}
 
 /* ---- Journey (F series, 26 Oct): the road, one card per screen, one green button ---- */
 .road{flex:none;position:relative;display:flex;justify-content:space-between;align-items:flex-start;margin:10px auto 0;padding:0 28px;width:min(1160px,calc(100% - 48px));z-index:15}
