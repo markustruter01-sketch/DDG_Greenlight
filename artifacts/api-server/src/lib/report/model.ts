@@ -34,7 +34,7 @@ export type FindingView = {
 
 export type ReportDoc = {
   kind: string; kindCode: string; title: string; subtitle: string; docNo: string; revision: string; issued: string;
-  marking: string; markingNote: string; dlm: string;
+  marking: string; markingAssigned: boolean; markingNote: string; dlm: string;
   project: string; source: string; runId: string; assessedAt: string; standardLabel: string;
   control: [string, string][]; revisions: string[][]; distribution: string[][]; notices: string[];
   blocks: Block[];
@@ -144,16 +144,20 @@ export function buildReport(run: any, kind: string, opts: BuildOptions): ReportD
     : run.counts;
   const readiness = std ? std.readiness : run.readiness;
   const verdict = std ? std.verdict : run.verdict;
-  const marking = run.classification?.accepted ? String(run.classification.current).toUpperCase() : "OFFICIAL: Sensitive";
-  const markingNote = run.classification?.accepted
-    ? `Marking confirmed by the system owner (${run.classification.current}).`
-    : `Default marking. Greenlight suggests ${run.classification?.suggested ?? "a classification"} for this code base; the system owner has not confirmed it. A person must assign the protective marking (PSPF).`;
+  // Only the originator may assign a protective marking (PSPF). Until the owner has
+  // confirmed one in Greenlight, the banner says so, in black, and no marking is implied.
+  const markingAssigned = !!run.classification?.accepted;
+  const marking = markingAssigned ? String(run.classification.current).toUpperCase() : "MARKING NOT ASSIGNED - ORIGINATOR TO DETERMINE";
+  const markingNote = markingAssigned
+    ? `Protective marking ${run.classification.current} selected by the system owner in Greenlight; not determined by Greenlight.`
+    : `No protective marking has been assigned. Only the originator may assign one (PSPF). As this document contains vulnerability information, OFFICIAL: Sensitive is suggested as a minimum; Greenlight's scan of the code suggests ${run.classification?.suggested ?? "a classification"}. Content at PROTECTED or above must stay on accredited systems.`;
   const control: [string, string][] = [
     ["Document number", docNo], ["Revision", "1.0 (generated)"], ["Date of issue", day(issuedAt.toISOString())],
-    ["Document type", k.title], ["Scope", std ? std.name : `${stds.length} standards: ${stds.map((s) => s.short).join(", ")}`],
+    ["Scope", std ? std.name : `${stds.length} standards: ${stds.map((s) => s.short).join(", ")}`],
     ["System assessed", run.projectName], ["Source", sourceLabel(run, redact)], ["Assessment run", String(run.id)],
-    ["Assessed on", day(run.assessedAt)], ["Assessment method", "Deterministic rules (no AI). Same input, same findings."],
-    ["Prepared by", "DDG Greenlight, automated rule-based assessment"], ["Protective marking", marking],
+    ["Assessed on", `${day(run.assessedAt)}, by deterministic rules (no AI)`],
+    ["Prepared by", "DDG Greenlight, automated rule-based assessment"], ["Prepared for", "System owner (to be named)"],
+    ["Protective marking", markingAssigned ? marking : "Not assigned (originator to determine)"],
   ];
   const revisions = [["Rev", "Date", "Description", "By"], ["1.0", day(issuedAt.toISOString()), `Generated from assessment run ${short}`, "Greenlight"]];
   const distribution = [["Copy", "Holder", "Purpose"], ["1", "System owner", "Decision on findings and residual risk"], ["2", "Security / safety assurance lead", "Independent review"], ["3", "Development lead", "Remediation"]];
@@ -194,45 +198,70 @@ export function buildReport(run: any, kind: string, opts: BuildOptions): ReportD
     `Readiness cannot reach 100% by code alone: ${counts.unanswered} requirement${counts.unanswered === 1 ? "" : "s"} ask for sign-offs, documents or decisions that a person must make.`,
   ] });
 
-  // ── 2 Scope and method ───────────────────────────────────────────────────
-  h1("Scope and method", "scope");
-  h2("System under assessment", "scope-system");
+  // ── 2 Introduction and scope ──────────────────────────────────────────────
   const inv = run.inventory || {};
-  B.push({ t: "table", cols: [{ h: "Item", w: 0.32 }, { h: "Detail", w: 0.68 }], rows: [
-    ["System", run.projectName], ["Source", sourceLabel(run, redact)], ["Files read", `${inv.files ?? "n/a"} (${inv.codeFiles ?? "n/a"} code, ${inv.testFiles ?? "n/a"} test)`],
+  const commit = (String(run.source || "").match(/\/tree\/([0-9a-z._-]+)/i) || [])[1] || "not recorded";
+  h1("Introduction and scope", "intro");
+  h2("Purpose", "intro-purpose");
+  B.push({ t: "p", text: `This document records a rule-based assessment of ${run.projectName} against ${std ? std.name : `${stds.length} standards`}. It tells the system owner and the assurance team what the source code shows, where, what closes each gap and what only a person can decide.${kind === "verification" ? " It also records whether approved fixes were verified by re-assessment." : ""}` });
+  h2("In scope", "intro-in");
+  B.push({ t: "list", items: [
+    `The source code of ${run.projectName} at commit ${commit}: ${inv.files ?? "all"} files read, ${inv.codeFiles ?? "n/a"} code and ${inv.testFiles ?? "n/a"} test files.`,
+    `The requirements of ${stds.map((s) => `${s.short}${run.levels?.[s.id] ? ` level ${run.levels[s.id]}` : s.id === "ism-e8" ? ` (E8 maturity ${run.maturity})` : ""}`).join(", ")} that can be evidenced in software.`,
+  ] });
+  h2("Out of scope", "intro-out");
+  B.push({ t: "list", items: [
+    "Organisational, physical and personnel controls, and anything not visible in the source code.",
+    "Penetration testing, runtime and infrastructure testing, and independent verification by an accredited assessor.",
+    "Assigning a protective marking, accepting risk or issuing any certificate or authorisation. These are decisions for people.",
+  ] });
+
+  // ── 3 References ──────────────────────────────────────────────────────────
+  h1("References", "refs");
+  B.push({ t: "p", text: "Requirements are cited by clause number with a paraphrased title. No licensed standard text is reproduced.", style: "muted" });
+  B.push({ t: "table", caption: "Applicable documents", cols: [{ h: "Ref", w: 0.08 }, { h: "Document", w: 0.5 }, { h: "Level / scope applied", w: 0.24 }, { h: "Requirements", w: 0.18, align: "right" }],
+    rows: stds.map((s, i) => [`[${i + 1}]`, s.name, run.levels?.[s.id] ? `Level ${run.levels[s.id]}` : s.id === "ism-e8" ? `E8 maturity ${run.maturity}` : "Default", String(s.total)]) });
+
+  // ── 4 System description ──────────────────────────────────────────────────
+  h1("System description", "system");
+  B.push({ t: "table", caption: "Target of assessment", cols: [{ h: "Item", w: 0.32 }, { h: "Detail", w: 0.68 }], rows: [
+    ["System", run.projectName], ["Source", sourceLabel(run, redact)], ["Commit", { text: commit, mono: true }],
+    ["Files read", `${inv.files ?? "n/a"} (${inv.codeFiles ?? "n/a"} code, ${inv.testFiles ?? "n/a"} test)`],
     ["Languages", (inv.languages || []).map((l: any) => `${l.name} (${l.files})`).join(", ") || "n/a"],
     ["Assessment run", { text: String(run.id), mono: true }], ["Assessed on", day(run.assessedAt)],
   ] });
-  h2("Standards and levels", "scope-standards");
-  B.push({ t: "table", cols: [{ h: "Standard", w: 0.42 }, { h: "Level / scope", w: 0.22 }, { h: "Requirements", w: 0.16, align: "right" }, { h: "Readiness", w: 0.2, align: "right" }],
-    rows: stds.map((s) => [s.name, run.levels?.[s.id] ? `Level ${run.levels[s.id]}` : s.id === "ism-e8" ? `E8 maturity ${run.maturity}` : "Default", String(s.total), { text: `${s.readiness}%`, tone: toneOf(s.readiness), bold: true }]) });
-  h2("Method", "scope-method");
+
+  // ── 5 Method ──────────────────────────────────────────────────────────────
+  h1("Method", "method");
   B.push({ t: "p", text: "Greenlight reads every file in the source and applies written rules. A rule looks for one thing (for example a credential committed to the repository) and records the file and line where it fired. The same source and settings always produce the same findings, ratings and scores. No AI model takes part in checking, rating, scoring or verification." });
   B.push({ t: "p", text: "Each requirement is rated from the rule results mapped to it. Readiness is the sum of the rating weights divided by the number of rated requirements. Requirements that need a person are counted separately and excluded from the percentage. Any must-fix or non-compliant requirement prevents a Ready verdict." });
-  h2("Rating scale", "scope-ratings");
-  B.push({ t: "table", cols: [{ h: "Rating", w: 0.3 }, { h: "Weight", w: 0.14, align: "right" }, { h: "Meaning", w: 0.56 }], rows: [
+  h2("Rating scale", "method-ratings");
+  B.push({ t: "table", caption: "Rating scale", cols: [{ h: "Rating", w: 0.3 }, { h: "Weight", w: 0.14, align: "right" }, { h: "Meaning", w: 0.56 }], rows: [
     [{ text: STATUS.C.word, tone: "green" }, "1.00", "The rules found the evidence the requirement asks for."],
     [{ text: STATUS.L.word, tone: "teal" }, "0.75", "Evidence found with minor gaps. Not the same as compliant."],
     [{ text: STATUS.P.word, tone: "amber" }, "0.40", "Some evidence found; significant gaps remain."],
     [{ text: STATUS.N.word, tone: "red" }, "0.00", "The evidence is missing or a rule found a defect."],
     [{ text: STATUS.UN.word, tone: "blue" }, "Not rated", "Needs a sign-off, document or decision. Code cannot answer it."],
   ] });
-  B.push({ t: "table", cols: [{ h: "Severity", w: 0.3 }, { h: "Scheme", w: 0.7 }], rows: [
+  h2("Severity scale", "method-severity");
+  B.push({ t: "table", caption: "Severity scale", cols: [{ h: "Severity", w: 0.3 }, { h: "Scheme", w: 0.7 }], rows: [
     ["High / Medium / Low", "Security findings (application and information security standards)."],
     ["Catastrophic, Critical, Marginal, Negligible", "Safety findings, following the MIL-STD-882E severity categories 1 to 4."],
     ["Must fix", "Blocking: the requirement must be met before release regardless of severity."],
   ] });
-  h2("Limitations", "scope-limits");
-  B.push({ t: "list", items: [
-    "A code pattern is indicative evidence, not complete verification. Process, organisational and physical controls cannot be seen in source code.",
-    "Findings rated Needs a person are unresolved until the responsible person records an answer.",
-    "The classification suggestion is a lexical scan. Only the system owner can assign a protective marking.",
-    ...stds.map((s) => `${s.short}: ${c(s.furtherTesting || "")}`),
-  ] });
+  if (kind === "ism-soa" || kind === "security-annex") {
+    B.push({ t: "callout", tone: "blue", title: "Relationship to IRAP control status", text: "An IRAP assessor records each control as Effective, Ineffective, Alternate control, Not implemented or No visibility, and does not rate risk inside control findings. Greenlight's ratings are indicative evidence from code to inform that assessment; they are not control-effectiveness determinations." });
+  }
+  if (kind === "asvs") {
+    B.push({ t: "callout", tone: "blue", title: "ASVS verification status", text: "This report is not an OWASP certification and does not claim compliance with ASVS. Automated checks alone cannot complete ASVS verification; requirements rated here need confirmation by manual review and testing at the target level." });
+  }
+  if (kind === "ssdf") {
+    B.push({ t: "callout", tone: "amber", title: "Worksheet, not the attestation", text: "This worksheet helps a software producer prepare the CISA Secure Software Development Attestation Form. It is not the attestation. The producer's chief executive or designee signs the form; Greenlight does not." });
+  }
 
   // ── 3 Findings by standard ────────────────────────────────────────────────
   if (kind !== "fix-prompt") {
-    h1(k.standardId ? "Assessment results" : "Findings by standard", "results");
+    h1("Findings", "results");
     for (const s of stds) {
       const list = ordered.filter((v) => v.standard === s.short);
       h2(`${s.name}`, `std-${s.id}`);
@@ -247,7 +276,7 @@ export function buildReport(run: any, kind: string, opts: BuildOptions): ReportD
       B.push({ t: "table", small: true, caption: `Findings register, ${s.short}`, cols: [{ h: "Ref", w: 0.14 }, { h: "Clause", w: 0.1 }, { h: "Requirement", w: 0.44 }, { h: "Rating", w: 0.18 }, { h: "Severity", w: 0.14 }],
         rows: list.map((v) => [{ text: v.ref, goTo: v.dest, mono: true }, { text: v.reqId, mono: true }, trim(v.title, 120), { text: v.blocking ? `${v.status} · must fix` : v.status, tone: v.statusTone }, v.severity]) });
     }
-    h1(k.standardId ? "Finding details" : "Finding details", "details");
+    h1("Finding details", "details");
     B.push({ t: "p", text: "Every requirement that is not compliant, in register order: what the rules found and where, what closes it, and how the fix will be proven. Compliant and largely compliant requirements are listed in the register only.", style: "muted" });
     for (const s of stds) {
       const list = ordered.filter((v) => v.standard === s.short && /Non-compliant|Partially|Needs/.test(v.status));
@@ -278,7 +307,7 @@ export function buildReport(run: any, kind: string, opts: BuildOptions): ReportD
   }
 
   // ── Remediation plan ──────────────────────────────────────────────────────
-  h1("Remediation plan", "plan");
+  h1("Recommendations: remediation plan", "plan");
   B.push({ t: "p", text: "Fixes are grouped into rounds, biggest gains first. Projected readiness assumes each round lands and is re-assessed by the same rules; projections are not measured results.", style: "muted" });
   for (const w of (run.waves || []) as any[]) {
     if (!w.fixCount) continue;
@@ -325,8 +354,42 @@ export function buildReport(run: any, kind: string, opts: BuildOptions): ReportD
       rows: (run.classification.evidence || []).slice(0, 15).map((e: any) => [{ text: `${e.file}:${e.line || 0}`, mono: true }, { text: e.ruleId, mono: true }, c(e.note)]) });
   }
 
+  // ── Residual risk ─────────────────────────────────────────────────────────
+  if (kind !== "fix-prompt") {
+    h1("Residual risk", "residual");
+    B.push({ t: "p", text: `Until the remediation rounds are verified, ${counts.blocking} must-fix and ${counts.failed} non-compliant requirement${counts.failed === 1 ? "" : "s"} remain open, with ${counts.partial} partially met and ${counts.unanswered} awaiting a person's decision. This document does not accept any risk. Residual risk is accepted, transferred or treated by the people named in the acceptance section.` });
+    if (kind === "mil882e") {
+      B.push({ t: "table", caption: "Risk acceptance authority (MIL-STD-882E)", cols: [{ h: "Risk level", w: 0.25 }, { h: "Acceptance authority", w: 0.4 }, { h: "Status in this document", w: 0.35 }], rows: [
+        [{ text: "High", tone: "red" }, "Component acquisition executive", "Probability (A to F) not assessed"],
+        [{ text: "Serious", tone: "amber" }, "Program executive officer", "Probability (A to F) not assessed"],
+        [{ text: "Medium / Low", tone: "teal" }, "Program manager", "Probability (A to F) not assessed"],
+      ] });
+      B.push({ t: "p", text: "Severity categories come from the findings. Probability levels and the resulting risk assessment codes must be set by the system safety team; code cannot establish them.", style: "muted" });
+    }
+    if (kind === "ed153") {
+      B.push({ t: "callout", tone: "amber", title: "Is the risk acceptable? Not demonstrated.", text: `The evidence in code is not sufficient to show that the software meets its software assurance level. ${std ? std.readiness : readiness}% of rated objectives are met; open objectives are listed in this report. Acceptability must be decided by the ANSP's safety assessment and the competent authority.` });
+    }
+  }
+
+  // ── Assumptions and limitations ───────────────────────────────────────────
+  h1("Assumptions and limitations", "limits");
+  B.push({ t: "list", items: [
+    "The assessed commit is the code that will be released; later changes need a new assessment.",
+    "A code pattern is indicative evidence, not complete verification. Process, organisational and physical controls cannot be seen in source code.",
+    "Findings rated Needs a person are unresolved until the responsible person records an answer.",
+    "The marking suggestion is a lexical scan of the code. Only the originator can assign a protective marking.",
+    "Projected readiness in the remediation plan is a projection, not a measured result.",
+    ...stds.map((s) => `${s.short}: ${c(s.furtherTesting || "")}`),
+  ] });
+
+  // ── Conclusion ────────────────────────────────────────────────────────────
+  h1("Conclusion", "conclusion");
+  B.push({ t: "p", text: kind === "fix-prompt"
+    ? `${(run.waves || []).filter((w: any) => w.fixCount > 0).length} rounds of fixes are planned. Run them one at a time, keep each as a pull request for review, and re-assess with the same rules after each.`
+    : `${run.projectName} is ${verdict === "Ready" ? "ready" : "not ready"} against ${std ? std.short : "the selected standards"} on the evidence in its code: ${readiness}% of rated requirements are met. The remediation plan closes the code gaps in ${(run.waves || []).filter((w: any) => w.fixCount > 0).length} rounds; the ${counts.unanswered} decision${counts.unanswered === 1 ? "" : "s"} that need a person remain with the system owner. Independent verification is still required before any claim of compliance.` });
+
   // ── Sign-off ──────────────────────────────────────────────────────────────
-  h1("Review and acceptance", "signoff");
+  h1("Acceptance", "signoff");
   B.push({ t: "p", text: "Findings are accepted, remediated or carried as residual risk by the people below. Greenlight does not accept risk on anyone's behalf.", style: "muted" });
   B.push({ t: "signoff", rows: [{ role: "Prepared by", name: "DDG Greenlight (automated, rule-based)" }, { role: "Reviewed by (assurance)", name: "" }, { role: "Accepted by (system owner)", name: "" }] });
 
@@ -351,7 +414,7 @@ export function buildReport(run: any, kind: string, opts: BuildOptions): ReportD
 
   return {
     kind, kindCode: k.code, title: k.title, subtitle: std ? std.name : k.subtitle, docNo, revision: "1.0", issued: day(issuedAt.toISOString()),
-    marking, markingNote, dlm: "", project: run.projectName, source: sourceLabel(run, redact), runId: String(run.id), assessedAt: day(run.assessedAt),
+    marking, markingAssigned, markingNote, dlm: "", project: run.projectName, source: sourceLabel(run, redact), runId: String(run.id), assessedAt: day(run.assessedAt),
     standardLabel: std ? std.short : "All standards", control, revisions, distribution, notices, blocks: B, register: ordered, soa,
   };
 }

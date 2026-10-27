@@ -14,10 +14,10 @@ const M = { l: 56, r: 56, t: 92, b: 76 };
 const W = PAGE.w - M.l - M.r;
 const INK = "#0B2233", BODY = "#1F2F3B", MUTED = "#5B6B78", RULE = "#D5DCE2", ZEBRA = "#F4F6F8", ACCENT = "#007A99", LINK = "#005F78";
 const TONE: Record<Tone, { fg: string; bg: string }> = {
-  red: { fg: "#A61B1B", bg: "#FBE7E7" }, amber: { fg: "#8A5300", bg: "#FFF1D6" }, green: { fg: "#1F6B33", bg: "#E3F3E6" },
+  red: { fg: "#7E1A55", bg: "#F6E6EF" } /* plum: red is kept for protective markings */, amber: { fg: "#8A5300", bg: "#FFF1D6" }, green: { fg: "#1F6B33", bg: "#E3F3E6" },
   teal: { fg: "#0E6B5C", bg: "#E0F2EE" }, grey: { fg: "#5B6B78", bg: "#EEF1F4" }, blue: { fg: "#1D4E89", bg: "#E4EDF8" }, ink: { fg: INK, bg: "#EEF1F4" },
 };
-const BAR: Record<Tone, string> = { red: "#C62828", amber: "#E08A00", green: "#2E7D32", teal: "#00897B", grey: "#90A4AE", blue: "#1E63B5", ink: INK };
+const BAR: Record<Tone, string> = { red: "#A3286F", amber: "#E08A00", green: "#2E7D32", teal: "#00897B", grey: "#90A4AE", blue: "#1E63B5", ink: INK };
 
 /** The standard fonts speak WinAnsi; map the few wider characters the content uses. */
 function w(s: string): string {
@@ -38,6 +38,8 @@ export function renderPdf(doc: ReportDoc): Promise<Buffer> {
   const done = new Promise<Buffer>((res, rej) => { pdf.on("end", () => res(Buffer.concat(chunks))); pdf.on("error", rej); });
 
   let tableNo = 0;
+  let inBody = false;
+  const tables: { label: string; dest: string; page: number }[] = [];
   const headings: { b: Extract<Block, { t: "h" }>; page: number }[] = [];
   const bottom = () => PAGE.h - M.b;
   const room = () => bottom() - pdf.y;
@@ -48,7 +50,7 @@ export function renderPdf(doc: ReportDoc): Promise<Buffer> {
 
   // ── cover ─────────────────────────────────────────────────────────────────
   newPage();
-  pdf.rect(0, 0, PAGE.w, 230).fill(INK);
+  pdf.rect(0, 36, PAGE.w, 200).fill(INK); // below the top marking, which must stay legible
   pdf.save(); pdf.circle(M.l + 38, 96, 40).fill("#FFFFFF"); pdf.restore();
   pdf.image(MARK_PNG, M.l + 6, 64, { width: 64 });
   font("b", 10, "#9FD8E6"); pdf.text("DIGITAL DYNAMICS GROUP", M.l + 96, 76, { characterSpacing: 2 });
@@ -90,8 +92,9 @@ export function renderPdf(doc: ReportDoc): Promise<Buffer> {
 
   // ── contents (reserved, filled after layout) ──────────────────────────────
   const tocEntries = doc.blocks.filter((b): b is Extract<Block, { t: "h" }> => b.t === "h" && !!b.toc && b.level <= 2);
-  const perPage = 38;
-  const tocPages = Math.max(1, Math.ceil((tocEntries.length + 3) / perPage));
+  const perPage = 40;
+  const captionCount = doc.blocks.filter((b) => b.t === "table" && b.caption).length;
+  const tocPages = Math.max(1, Math.ceil((tocEntries.length + captionCount + 6) / perPage));
   const tocStart = pdf.bufferedPageRange().count;
   for (let i = 0; i < tocPages; i++) newPage();
 
@@ -99,6 +102,7 @@ export function renderPdf(doc: ReportDoc): Promise<Buffer> {
   const outline: any = (pdf as any).outline;
   let curTop: any = null;
   outline.addItem("Cover", { expanded: false });
+  inBody = true;
   for (const b of doc.blocks) {
     switch (b.t) {
       case "h": {
@@ -132,7 +136,6 @@ export function renderPdf(doc: ReportDoc): Promise<Buffer> {
   }
 
   // ── contents, now that page numbers are known ─────────────────────────────
-  const total = pdf.bufferedPageRange().count;
   pdf.switchToPage(tocStart);
   pdf.y = M.t;
   sectionTitle("Contents", "contents", true);
@@ -141,7 +144,7 @@ export function renderPdf(doc: ReportDoc): Promise<Buffer> {
   for (const e of tocEntries) {
     if (pdf.y > bottom() - 18) { tp += 1; pdf.switchToPage(tp); pdf.y = M.t; }
     const hit = headings.find((x) => x.b === e);
-    const pageNo = hit ? String(hit.page + 1) : "";
+    const pageNo = hit ? String(hit.page - (tocStart + tocPages) + 1) : "";
     const indent = e.level === 1 ? 0 : 18;
     const label = w(e.num ? `${e.num}  ${e.text}` : e.text);
     font(e.level === 1 ? "b" : "r", e.level === 1 ? 10.5 : 9.5, e.level === 1 ? INK : BODY);
@@ -153,13 +156,42 @@ export function renderPdf(doc: ReportDoc): Promise<Buffer> {
     pdf.y = y + (e.level === 1 ? 17 : 14);
   }
 
+  if (tables.length) {
+    if (pdf.y > bottom() - 60) { tp += 1; pdf.switchToPage(tp); pdf.y = M.t; }
+    pdf.y += 14;
+    font("b", 12, INK); pdf.text("List of tables", M.l, pdf.y, { width: W }); pdf.y += 6;
+    for (const t of tables) {
+      if (pdf.y > bottom() - 18) { tp += 1; pdf.switchToPage(tp); pdf.y = M.t; }
+      font("r", 9, BODY);
+      const label = w(t.label);
+      const lw = Math.min(pdf.widthOfString(label), W - 60);
+      const y = pdf.y;
+      pdf.text(label, M.l, y, { width: W - 60, lineBreak: false, ellipsis: true, goTo: t.dest } as any);
+      pdf.text(String(t.page - (tocStart + tocPages) + 1), M.l + W - 40, y, { width: 40, align: "right", lineBreak: false, goTo: t.dest } as any);
+      dots(M.l + lw + 6, M.l + W - 44, y + 8);
+      pdf.y = y + 14;
+    }
+  }
+
+  // ── rear cover ────────────────────────────────────────────────────────────
+  newPage();
+  pdf.rect(0, PAGE.h - 300, PAGE.w, 260).fill(INK); // above the bottom marking
+  pdf.save(); pdf.circle(PAGE.w / 2, PAGE.h - 190, 34).fill("#FFFFFF"); pdf.restore();
+  pdf.image(MARK_PNG, PAGE.w / 2 - 27, PAGE.h - 217, { width: 54 });
+  font("b", 9, "#9FD8E6"); pdf.text("DIGITAL DYNAMICS GROUP", 0, PAGE.h - 140, { width: PAGE.w, align: "center", characterSpacing: 2 });
+  font("r", 8, "#C9D6DE"); pdf.text(w(`${doc.docNo}  Rev ${doc.revision}  |  End of document`), 0, PAGE.h - 124, { width: PAGE.w, align: "center" });
+  const all = pdf.bufferedPageRange().count;
+  const bodyFirst = tocStart + tocPages; // front matter: cover, document control, contents
+  const bodyCount = all - bodyFirst - 1; // the rear cover carries no number
+  const roman = (n: number) => ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x"][n - 1] ?? String(n);
+
   // ── page furniture on every page ──────────────────────────────────────────
-  for (let i = 0; i < total; i++) {
+  for (let i = 0; i < all; i++) {
     pdf.switchToPage(i);
     const keep = pdf.page.margins;
     pdf.page.margins = { top: 0, bottom: 0, left: 0, right: 0 };
     marking(18); marking(PAGE.h - 28);
-    if (i > 0) {
+    if (i > 0 && i < all - 1) {
       font("b", 7.5, INK); pdf.text("GREENLIGHT", M.l, 46, { lineBreak: false, characterSpacing: 1.2 });
       font("r", 7.5, MUTED); pdf.text(w(`${doc.title}  |  ${doc.project}`), M.l + 66, 46, { width: W - 200, lineBreak: false, ellipsis: true } as any);
       pdf.text(`${doc.docNo}  Rev ${doc.revision}`, M.l + W - 130, 46, { width: 130, align: "right", lineBreak: false });
@@ -167,7 +199,8 @@ export function renderPdf(doc: ReportDoc): Promise<Buffer> {
       pdf.moveTo(M.l, PAGE.h - 58).lineTo(M.l + W, PAGE.h - 58).lineWidth(0.6).strokeColor(RULE).stroke();
       font("r", 7.5, MUTED);
       pdf.text(w(`Issued ${doc.issued}  |  Checked by rules, not AI  |  Uncontrolled when printed`), M.l, PAGE.h - 50, { width: W - 90, lineBreak: false });
-      font("b", 7.5, INK); pdf.text(`Page ${i + 1} of ${total}`, M.l + W - 90, PAGE.h - 50, { width: 90, align: "right", lineBreak: false });
+      const label = i < bodyFirst ? roman(i + 1) : `Page ${i - bodyFirst + 1} of ${bodyCount}`;
+      font("b", 7.5, INK); pdf.text(label, M.l + W - 90, PAGE.h - 50, { width: 90, align: "right", lineBreak: false });
     }
     pdf.page.margins = keep;
   }
@@ -176,8 +209,9 @@ export function renderPdf(doc: ReportDoc): Promise<Buffer> {
 
   // ── primitives ────────────────────────────────────────────────────────────
   function marking(y: number) {
-    font("b", 9, "#A61B1B");
-    pdf.text(w(doc.marking.toUpperCase()), 0, y, { width: PAGE.w, align: "center", lineBreak: false, characterSpacing: 1.5 });
+    // An assigned marking: bold capitals, red, centred (DSPF). Unassigned: a black notice, never red.
+    if (doc.markingAssigned) font("b", 13, "#C00000"); else font("b", 8.5, "#111111");
+    pdf.text(w(doc.marking.toUpperCase()), 0, doc.markingAssigned ? y - 2 : y, { width: PAGE.w, align: "center", lineBreak: false, characterSpacing: doc.markingAssigned ? 1 : 1.2 });
   }
   function sectionTitle(text: string, _id: string, front: boolean) {
     font("b", front ? 18 : 20, INK); pdf.text(w(text), M.l, pdf.y, { width: W });
@@ -270,7 +304,12 @@ export function renderPdf(doc: ReportDoc): Promise<Buffer> {
       cols.forEach((c, i) => { font("b", 7.6, "#FFFFFF"); pdf.text(w(c.h.toUpperCase()), x + pad, y + 5.5, { width: widths[i] - pad * 2, align: c.align ?? "left", lineBreak: false, characterSpacing: 0.5, ellipsis: true } as any); x += widths[i]; });
       pdf.y = y + headerH;
     };
-    if (cap) { tableNo += 1; ensure(headerH + 40); caption(`Table ${tableNo}. ${cap}`); }
+    if (cap && !inBody) { ensure(headerH + 40); caption(cap); }
+    else if (cap) {
+      tableNo += 1; ensure(headerH + 40);
+      { const dest = `t-${tableNo}`; pdf.addNamedDestination(dest, "XYZ", 0, PAGE.h - pdf.y + 8, null); tables.push({ label: `Table ${tableNo}. ${cap}`, dest, page: pdf.bufferedPageRange().count - 1 }); }
+      caption(`Table ${tableNo}. ${cap}`);
+    }
     ensure(headerH + 24);
     drawHeader();
     rows.forEach((row, ri) => {
@@ -371,7 +410,7 @@ export function renderPdf(doc: ReportDoc): Promise<Buffer> {
     pdf.y += 12;
   }
   function signoff(rows: { role: string; name: string }[]) {
-    const cols = [0.28, 0.3, 0.26, 0.16].map((x) => x * W), heads = ["Role", "Name", "Signature", "Date"], rh = 30;
+    const cols = [0.28, 0.3, 0.26, 0.16].map((x) => x * W), heads = ["Role", "Name", "Signature", "Date"], rh = inBody ? 34 : 26;
     ensure(18 + rh * rows.length + 10);
     let y = pdf.y, x = M.l;
     pdf.rect(M.l, y, W, 18).fill(INK);
