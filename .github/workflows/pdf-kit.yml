@@ -1,0 +1,39 @@
+name: PDF kit (one-off)
+on:
+  push:
+    branches: [tooling/pdf-kit]
+permissions:
+  contents: write
+jobs:
+  kit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - name: Fetch the live sample run and its current reports
+        run: |
+          set -e
+          mkdir -p out/before
+          B=https://ddg-greenlight.replit.app/api/greenlight
+          ID=6eca910c-eaa2-4314-a9f0-005dfe788949
+          curl -sf "$B/runs/$ID" -o out/run.json
+          curl -sf "$B/runs/$ID/reports" -o out/reports.json
+          for k in findings verification ism-soa asvs ed153 mil882e iso27001-soa ssdf fix-prompt security-annex; do
+            curl -sf "$B/runs/$ID/reports/$k?format=pdf" -o "out/before/$k.pdf" || echo "skip $k"
+          done
+          curl -sf "$B/runs/$ID/reports/ism-soa?format=docx" -o out/before/ism-soa.docx || true
+          curl -sf "$B/runs/$ID/reports/security-annex?format=xlsx" -o out/before/security-annex.xlsx || true
+          ls -la out out/before
+      - name: Pack pdfkit and exceljs with their dependencies
+        run: |
+          set -e
+          mkdir -p kit && cd kit && npm init -y >/dev/null
+          npm install --no-audit --no-fund pdfkit@0.20.2 exceljs@4.4.0 docx@9.13.0
+          tar czf ../out/node_modules.tgz node_modules
+      - name: Push to the kit branch
+        run: |
+          cd out
+          git init -q && git checkout -q -b pdf-kit-out
+          git -c user.name=ci -c user.email=ci@local add -A
+          git -c user.name=ci -c user.email=ci@local commit -qm "pdf kit"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" pdf-kit-out
