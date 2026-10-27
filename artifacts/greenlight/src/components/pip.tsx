@@ -58,9 +58,16 @@ function placeNear(r: DOMRect) {
   const vw = window.innerWidth, vh = window.innerHeight;
   const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
   const left = cx > vw / 2;
-  let x = left ? r.left - W - 40 : r.right + 40;
-  // Below the button when there is room (it covers the least there), else above.
-  let y = r.bottom + 260 < vh ? r.bottom + 24 : r.top - 240;
+  let x: number, y: number;
+  if (vw - 1160 >= 2 * (W + 48)) {
+    // Wide screen: hover in the free margin beside the card, level with the button.
+    x = left ? 24 : vw - W - 24;
+    y = cy - 60;
+  } else {
+    x = left ? r.left - W - 40 : r.right + 40;
+    // Below the button when there is room (it covers the least there), else above.
+    y = r.bottom + 260 < vh ? r.bottom + 24 : r.top - 240;
+  }
   x = Math.max(16, Math.min(vw - W - 16, x));
   y = Math.max(190, Math.min(vh - 250, y)); // never over the header or the road
   return { x, y };
