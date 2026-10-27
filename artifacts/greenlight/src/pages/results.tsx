@@ -26,7 +26,7 @@ export default function Results() {
   const fixable = run ? run.waves.reduce((n, w) => n + w.fixes.reduce((m, f) => m + f.itemKeys.length, 0), 0) : 0;
   const ms = run ? Math.max(0, (run as { durationMs?: number }).durationMs ?? 0) : 0;
 
-  const guide = { steps: ['Read the number. Red under 40, amber under 75, green at 75 and up.', 'Press Show me the plan', 'Or See each one to tap through every problem on the planet'], current: 0 };
+  const guide = { steps: ['Read the number. Red under 40, amber under 75, green at 75 and up.', 'Press Show me the plan', 'Or See each one to tap through every problem around your software'], current: 0 };
 
   return (
     <Shell runId={id} guide={run ? guide : undefined} pip={run ? { id: 'results', what: 'What the code found: one number, and every problem behind it. Checked by rules, not AI.', press: 'Press See each one.', target: '[data-testid="link-orbit"]', also: 'Show me the plan skips straight to the fixes.' } : null} runMeta={run ? `${run.projectName} · ${new Date(run.assessedAt).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' })}` : undefined}>

@@ -73,7 +73,7 @@ export default function Verified() {
                 )}
                 <div className="flex flex-wrap items-center gap-3">
                   <Link href={`/signoff/${id}${search ? `?${search.replace(/^\?/, '')}` : ''}`} className="btn btn-go btn-big" data-testid="link-signoff">Sign it off <ArrowRight size={20} /></Link>
-                  <Link href={orbitHref} className="btn btn-quiet" data-testid="link-before-after"><OrbitIcon size={15} /> Before and after on the planet</Link>
+                  <Link href={orbitHref} className="btn btn-quiet" data-testid="link-before-after"><OrbitIcon size={15} /> Before and after, every requirement</Link>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button className="btn btn-quiet" onClick={() => openAuditDocument(run, after, download)} data-testid="button-audit-document"><FileSearch size={15} /> The audit document · every requirement, every line changed</button>

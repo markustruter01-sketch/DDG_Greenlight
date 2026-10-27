@@ -644,7 +644,7 @@ export function OrbitView({
           <div className="orbit-hint" data-testid="orbit-hint" aria-hidden="true">
             <Mouse className="orbit-hint-mouse" size={26} strokeWidth={1.6} />
             <div className="orbit-hint-title">Drag to look around</div>
-            <div className="orbit-hint-keys"><span><b>Drag</b> · turn the planet</span><span><b>Scroll</b> · zoom</span><span><b>Click a light</b> · open it</span></div>
+            <div className="orbit-hint-keys"><span><b>Drag</b> · turn the view</span><span><b>Scroll</b> · zoom</span><span><b>Click a light</b> · open it</span></div>
           </div>
         )}
         {!compatibility && moved && (

@@ -18,19 +18,19 @@ import { TourProgress } from '@/components/tour-progress';
 import { createNarrator } from '@/lib/narrator';
 import { useCaptionSlot } from '@/lib/caption-slot';
 import { useRecording } from '@/pages/replay';
-import { pc, statusMap, tally, tone, waveOf } from '@/lib/greenlight';
+import { countFiles, pc, statusMap, tally, tone, waveOf } from '@/lib/greenlight';
 
 const RING_COLORS = ['#7CC9E8', '#00E5FF', '#CFE3EE'];
 const CLASSES = ['Non-classified', 'OFFICIAL: Sensitive', 'PROTECTED', 'SECRET', 'TOP SECRET'];
 const TOUR_SEEN_KEY = 'ddg-greenlight-results-tour-seen';
 const TOUR_STEPS = [
-  { title: 'This is your software', body: 'The glass planet represents the software being assessed.', seconds: 12 },
+  { title: 'This is your software', body: 'The sphere in the middle is your software: the code being assessed.', seconds: 12 },
   { title: 'Three rings, three kinds of requirement', body: 'The inner blue ring is safety, the middle cyan ring is security, and the outer white ring is AI requirements. Each lights up in turn.', seconds: 14 },
   { title: 'Every dot is one requirement', body: 'Green means met, amber means partial, red means failed, and dim dots are not applicable.', seconds: 14 },
   { title: 'Raised pins are must-fix', body: 'Raised red pins mark blocking items that must be addressed before release.', seconds: 14 },
   { title: 'Links show shared evidence', body: 'A link joins requirements in different standards that rest on the same evidence. One fix can close all of them.', seconds: 15 },
-  { title: 'A score per standard', body: 'The pills above the planet show how much of each standard already passes. Tap one to see its requirements.', seconds: 14 },
-  { title: 'The plan, round by round', body: 'Each round is a batch of fixes. The switch above the planet shows what the lights look like after each one; the same rules check the code again for real after a fix.', seconds: 20 },
+  { title: 'A score per standard', body: 'The pills above the view show how much of each standard already passes. Tap one to see its requirements.', seconds: 14 },
+  { title: 'The plan, round by round', body: 'Each round is a batch of fixes. The switch above the view shows what the lights look like after each one; the same rules check the code again for real after a fix.', seconds: 20 },
   { title: 'Tap any light for its evidence', body: 'The pop-up shows what is wrong, the rule that found it, the file and the line, and what will fix it.', seconds: 15 },
   { title: 'Checked by code. Fixed with Claude.', body: 'Every check you just saw is code: written rules that read the repository, with no AI involved. Claude is used for one thing only, writing the fixes, and you approve each change before the same code checks again. Next: Show me the plan.', seconds: 18 },
 ];
@@ -45,16 +45,6 @@ type SavedTourState = {
   target: Target;
   picked: string | null;
   layers: Record<string, boolean>;
-};
-const countFiles = (inventory: unknown) => {
-  if (Array.isArray(inventory)) return inventory.length;
-  if (inventory && typeof inventory === 'object') {
-    const data = inventory as Record<string, unknown>;
-    if (typeof data.files === 'number') return data.files;
-    if (Array.isArray(data.files)) return data.files.length;
-    if (typeof data.fileCount === 'number') return data.fileCount;
-  }
-  return null;
 };
 
 /**
@@ -474,7 +464,7 @@ export default function Orbit() {
       guide={run && !afterName ? {
         steps: tourActiveNow
           ? ['Watch the guided tour; press Exit on the caption to take over', 'Tap any light to read what is wrong and where', 'Press Show me the plan']
-          : ['Drag to turn the planet. Tap a light to read what is wrong and where', 'Raised red pins are the serious ones', 'Press Show me the plan'],
+          : ['Drag to turn the view. Tap a light to read what is wrong and where', 'Raised red pins are the serious ones', 'Press Show me the plan'],
         current: tourActiveNow ? 0 : picked ? 1 : 0,
         aside: !tourActiveNow && tourStatus !== 'playing' ? <button className="lbl hover:text-[#00E5FF]" onClick={startTour} data-testid="button-guide-tour">What am I looking at?</button> : undefined,
       } : undefined}
@@ -576,7 +566,7 @@ export default function Orbit() {
                   <div className="glass orbit-tour-card">
                     <div className="lbl !text-[#00E5FF]">First time here?</div>
                     <h2 className="font-head mt-2 text-xl font-semibold">What am I looking at?</h2>
-                    <p className="mt-2 text-sm text-[#CFE3EE]">A {Math.round(TOUR_TOTAL_SECONDS / 60)}-minute walk around the planet: what the rings, lights and pins mean, and where the plan comes from.</p>
+                    <p className="mt-2 text-sm text-[#CFE3EE]">A {Math.round(TOUR_TOTAL_SECONDS / 60)}-minute walk around the audit: what the rings, lights and pins mean, and where the plan comes from.</p>
                     <div className="mt-5 flex items-center gap-3">
                       <button className="btn btn-primary" onClick={startTour} data-testid="button-tour-play">Show me</button>
                       <button className="lbl rounded-lg px-3 py-2 hover:text-[#00E5FF]" onClick={finishTour} data-testid="button-tour-skip">I know this</button>

@@ -78,6 +78,18 @@ export function tone(c: { failed: number; blocking: number; partial: number; una
   return { color: '#4FD99A', word: 'Ready' };
 }
 
+/** How many files the assessment read, from whatever shape the inventory has. */
+export const countFiles = (inventory: unknown): number | null => {
+  if (Array.isArray(inventory)) return inventory.length;
+  if (inventory && typeof inventory === 'object') {
+    const data = inventory as Record<string, unknown>;
+    if (typeof data.files === 'number') return data.files;
+    if (Array.isArray(data.files)) return data.files.length;
+    if (typeof data.fileCount === 'number') return data.fileCount;
+  }
+  return null;
+};
+
 export const pc = (v: number | undefined) => {
   if (v == null || Number.isNaN(v)) return 0;
   return Math.round(v <= 1 ? v * 100 : v);
