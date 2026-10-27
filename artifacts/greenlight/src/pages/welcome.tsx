@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'wouter';
-import { ArrowRight, Play } from 'lucide-react';
+import { ArrowRight, Play, X } from 'lucide-react';
 import { Shell, Logo, STEPS } from '@/components/shell';
-import { Modal } from '@/components/gl';
 
 /** The 90-second explainer (public/explainer.mp4), rendered from the DDG motion kit. */
 const EXPLAINER = `${import.meta.env.BASE_URL}explainer.mp4?v=r3`;
@@ -50,19 +49,48 @@ export default function Welcome() {
           </nav>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link href="/start" className="btn btn-go btn-big" data-testid="link-start-assessment">Check my code <ArrowRight size={20} /></Link>
-            <button className="btn btn-quiet btn-attn" onClick={() => setWatch(true)} data-testid="button-watch-how"><Play size={16} /> Watch how it works · 1:30</button>
+            <button className="btn btn-quiet btn-attn" onClick={() => { setWatch(true); openFullscreen(); }} data-testid="button-watch-how"><Play size={16} /> Watch how it works · 1:30</button>
           </div>
           <p className="jnote text-center">Every check is code, not AI. Claude is used for one thing: writing the fixes you approve.</p>
         </section>
       </div>
-      <Modal open={watch} onClose={() => setWatch(false)} title="How Greenlight works" wide>
-        {watch && (
-          <video className="explainer-video" src={EXPLAINER} poster={EXPLAINER_POSTER} controls autoPlay playsInline preload="auto" data-testid="video-explainer">
-            Your browser cannot play this video.
-          </video>
-        )}
-        <p className="lbl mt-3 !normal-case !tracking-normal">Checked by code. Fixed by Claude. Re-checked by code.</p>
-      </Modal>
+      {watch && <ExplainerPlayer onClose={() => setWatch(false)} />}
     </Shell>
+  );
+}
+
+/** Ask the browser for full screen from the click itself (it refuses later calls). */
+function openFullscreen() {
+  if (document.fullscreenElement || !document.documentElement.requestFullscreen) return;
+  document.documentElement.requestFullscreen().catch(() => { /* not allowed here: the player still fills the window */ });
+}
+
+/**
+ * The explainer, full screen: black, the video fitted to the screen, one ×
+ * at the top right. Esc, the × or the video ending all close it and leave
+ * full screen.
+ */
+function ExplainerPlayer({ onClose }: { onClose: () => void }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const close = () => {
+    if (document.fullscreenElement) void document.exitFullscreen?.();
+    onClose();
+  };
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    // Leaving full screen with the browser's own Esc closes the player too.
+    const fs = () => { if (!document.fullscreenElement) onClose(); };
+    window.addEventListener('keydown', k);
+    document.addEventListener('fullscreenchange', fs);
+    void ref.current?.play().catch(() => { /* autoplay refused: the controls are there */ });
+    return () => { window.removeEventListener('keydown', k); document.removeEventListener('fullscreenchange', fs); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <div className="explainer-full" role="dialog" aria-modal="true" aria-label="How Greenlight works" data-testid="explainer-player">
+      <video ref={ref} className="explainer-full-video" src={EXPLAINER} poster={EXPLAINER_POSTER} controls autoPlay playsInline preload="auto" onEnded={close} data-testid="video-explainer">
+        Your browser cannot play this video.
+      </video>
+      <button className="explainer-full-x" onClick={close} aria-label="Close the video" title="Close (Esc)" data-testid="button-close-explainer"><X size={22} /></button>
+    </div>
   );
 }

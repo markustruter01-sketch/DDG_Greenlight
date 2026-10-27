@@ -155,10 +155,11 @@ export function Pip({ spec }: { spec: PipSpec | null }) {
     return () => window.clearTimeout(t);
   }, [spec?.id, spec?.target, spec?.corner, off]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!spec) return null;
+  // Switched off: a small button to bring her back stays on every screen.
   if (off) {
-    return <button className="pip-back" onClick={() => setOff(false)} aria-label="Bring Freya back" data-testid="button-pip-back"><PipFace small /> Freya</button>;
+    return <button className="pip-back" onClick={() => setOff(false)} aria-label="Bring Freya back" title="Bring Freya back" data-testid="button-pip-back"><PipFace small /> Freya</button>;
   }
+  if (!spec) return null;
   const right = corner === 'tr' || corner === 'br';
   return (
     <>

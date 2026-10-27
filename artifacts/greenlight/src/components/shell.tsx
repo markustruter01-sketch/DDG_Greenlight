@@ -148,7 +148,7 @@ export function Shell({
       {/* Freya and the one-line guide say the same thing: the strip shows only while she is off. */}
       {chrome && guide && (!pip || pipOff) && <Guide spec={guide} />}
       <main className="app-main relative z-10 flex flex-1 flex-col">{children}</main>
-      {pip && <Pip spec={pip} />}
+      <Pip spec={pip ?? null} />
       {runId && <ReportsModal runId={runId} open={reports} onClose={() => setReports(false)} />}
     </div>
   );
