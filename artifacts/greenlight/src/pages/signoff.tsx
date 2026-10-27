@@ -44,6 +44,8 @@ export default function Signoff() {
   }, [run, after.changedKeys, after.statusesAfter]);
   const nextWave = run?.waves.find((w) => w.number > after.wave && w.fixCount > 0);
   const prs = after.mode === 'fix' ? (after.pullRequestUrl ? [{ wave: after.wave, url: after.pullRequestUrl }] : []) : recWaves.filter((w) => w.pullRequest).map((w) => ({ wave: w.wave, url: w.pullRequest! }));
+  // The per-standard audits describe the code before the fixes; the verification report above is the after.
+  const baseline = (reports.data ?? []).filter((rep) => rep.kind !== 'verification');
   const verification: Report | null = after.mode === 'recording' && afterParam ? afterReport(id, afterParam) : null;
   const verificationPdf = () => { if (verification) return download(reportUrl(verification.url, 'pdf')); if (after.verificationPdfUrl) download(reportUrl(after.verificationPdfUrl, 'pdf')); };
   const riskCsv = () => {
@@ -77,8 +79,8 @@ export default function Signoff() {
               <button className="btn btn-go w-full justify-center" style={{ fontSize: 18, padding: '14px 18px' }} onClick={() => setExportOpen(true)} data-testid="button-export"><Download size={19} /> Export the fixed code</button>
 
               <span className="jnote">Your report</span>
-              <div className="rp-dl">
-                <div className="rp-dl-main"><FileCheck2 size={18} style={{ color: '#4FD99A' }} /><span><b>Verification report</b><small>After the fixes · for your assurance team</small></span></div>
+              <div className="rp-dl rp-dl-stack">
+                <div className="rp-dl-main"><FileCheck2 size={20} style={{ color: '#4FD99A' }} /><span><b>Verification report</b><small>After the fixes · for your assurance team</small></span></div>
                 <div className="rp-dl-fmts">
                   {verification && <button onClick={() => setViewReport(verification)} data-testid="button-view-report"><Eye size={13} /> View</button>}
                   <button disabled={!verification && !after.verificationPdfUrl} onClick={verificationPdf} data-testid="button-verification-report">PDF</button>
@@ -89,11 +91,11 @@ export default function Signoff() {
               <button className="jout" onClick={() => openAuditDocument(run, after, download)} data-testid="button-audit-document"><FileSearch size={18} style={{ color: '#00E5FF' }} /> Audit document: every line changed</button>
               <button className="jout" onClick={() => downloadAuditCsv(run, after, download)} data-testid="button-trace-sheet"><FileSpreadsheet size={18} style={{ color: '#B9C3CC' }} /> Every requirement, before and after (spreadsheet)</button>
 
-              {!!reports.data?.length && <>
+              {!!baseline.length && <>
                 <span className="jnote">The audits, per standard · before the fixes</span>
-                {reports.data.map((rep) => (
+                {baseline.map((rep) => (
                   <div key={rep.kind + rep.standardId} className="rp-dl rp-dl-small" data-testid={`row-audit-${rep.kind}-${rep.standardId}`}>
-                    <span className="truncate" title={rep.title}>{rep.standardId ? plainName(rep.standardId, rep.title) : rep.title}</span>
+                    <span className="min-w-0" title={rep.title}>{rep.title}</span>
                     <div className="rp-dl-fmts">{rep.formats.map((f) => <button key={f} onClick={() => download(reportUrl(rep.url, f))}>{f === 'docx' ? 'Word' : f === 'xlsx' ? 'Excel' : f.toUpperCase()}</button>)}</div>
                   </div>
                 ))}
