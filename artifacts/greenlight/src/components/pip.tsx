@@ -62,7 +62,7 @@ function placeNear(r: DOMRect) {
   // Below the button when there is room (it covers the least there), else above.
   let y = r.bottom + 260 < vh ? r.bottom + 24 : r.top - 240;
   x = Math.max(16, Math.min(vw - W - 16, x));
-  y = Math.max(96, Math.min(vh - 250, y));
+  y = Math.max(190, Math.min(vh - 250, y)); // never over the header or the road
   return { x, y };
 }
 
