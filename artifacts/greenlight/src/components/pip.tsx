@@ -59,10 +59,8 @@ function placeNear(r: DOMRect) {
   const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
   const left = cx > vw / 2;
   let x = left ? r.left - W - 40 : r.right + 40;
-  let y = cy - 30;
-  // Above the button when it sits low; below when it sits high.
-  if (cy > vh * 0.62) y = r.top - 230;
-  else if (cy < vh * 0.3) y = r.bottom + 24;
+  // Below the button when there is room (it covers the least there), else above.
+  let y = r.bottom + 260 < vh ? r.bottom + 24 : r.top - 240;
   x = Math.max(16, Math.min(vw - W - 16, x));
   y = Math.max(96, Math.min(vh - 250, y));
   return { x, y };
