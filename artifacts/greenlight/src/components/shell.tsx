@@ -5,6 +5,7 @@ import { Show, UserButton } from '@clerk/react';
 import { useListProjects } from '@workspace/api-client-react';
 import { ReportsModal } from '@/components/reports';
 import { Guide, type GuideSpec } from '@/components/guide';
+import { Coach, type CoachSpec } from '@/components/coach';
 
 const base = import.meta.env.BASE_URL;
 
@@ -92,6 +93,7 @@ export function Shell({
   headerActions,
   roadDone = false,
   roadStep,
+  coach,
 }: {
   children: ReactNode;
   runId?: string;
@@ -105,6 +107,8 @@ export function Shell({
   roadDone?: boolean;
   /** Force which stop is current (sub-screens of a step). */
   roadStep?: number;
+  /** The "Do this" card for this screen. */
+  coach?: CoachSpec | null;
 }) {
   const [reports, setReports] = useState(false);
   const projects = useListProjects();
@@ -141,6 +145,7 @@ export function Shell({
       {chrome && <Road runId={rid} done={roadDone} current={roadStep} />}
       {chrome && guide && <Guide spec={guide} />}
       <main className="app-main relative z-10 flex flex-1 flex-col">{children}</main>
+      {coach && <Coach spec={coach} />}
       {runId && <ReportsModal runId={runId} open={reports} onClose={() => setReports(false)} />}
     </div>
   );

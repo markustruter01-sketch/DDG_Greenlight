@@ -29,7 +29,7 @@ export default function Results() {
   const guide = { steps: ['Read the number. Red under 40, amber under 75, green at 75 and up.', 'Press Show me the plan', 'Or See each one to tap through every problem on the planet'], current: 0 };
 
   return (
-    <Shell runId={id} guide={run ? guide : undefined} runMeta={run ? `${run.projectName} · ${new Date(run.assessedAt).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' })}` : undefined}>
+    <Shell runId={id} guide={run ? guide : undefined} coach={run ? { id: 'results', text: 'Press See each one.', target: '[data-testid="link-orbit"]' } : null} runMeta={run ? `${run.projectName} · ${new Date(run.assessedAt).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' })}` : undefined}>
       <div className="jl">
         {q.isLoading || !run || !counts ? (
           q.isError ? <ErrorBlock message="This assessment could not be loaded." onRetry={() => q.refetch()} /> : <Skeleton className="h-80 w-full" />

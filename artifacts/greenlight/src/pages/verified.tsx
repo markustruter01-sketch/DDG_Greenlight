@@ -46,7 +46,7 @@ export default function Verified() {
   };
 
   return (
-    <Shell runId={id} guide={run && !noSource ? guide : undefined} runMeta={run ? `${run.projectName} · proof` : undefined}>
+    <Shell runId={id} guide={run && !noSource ? guide : undefined} runMeta={run ? `${run.projectName} · proof` : undefined} coach={run && !noSource ? (afterParam && !afterParam.includes(',') && DEMO_WAVES.length > 1 ? { id: 'proof-all', text: 'Press All rounds.', target: '[data-testid="button-waves-all-rounds"]' } : { id: 'proof', text: 'Press Sign it off.', target: '[data-testid="link-signoff"]' }) : null}>
       <div className="jl">
         {q.isLoading || after.loading ? <Skeleton className="h-80 w-full" /> : q.isError || !run ? <ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /> : noSource ? (
           <section className="glass jcard" data-testid="screen-proof-empty">

@@ -80,7 +80,7 @@ export default function Plan() {
   };
 
   return (
-    <Shell runId={id} guide={guide} runMeta={run ? `${run.projectName} · the plan` : undefined}>
+    <Shell runId={id} guide={guide} runMeta={run ? `${run.projectName} · the plan` : undefined} coach={run ? (enabled ? { id: 'plan', text: `Press Fix round ${wave || 1} with Claude.`, target: '[data-testid="button-start-fix"]' } : { id: 'plan', text: `Press Watch round ${wave || 1} recorded.`, target: '[data-testid="link-recorded-fix"]' }) : null}>
       <div className="jl">
         {q.isLoading ? <Skeleton className="h-80 w-full" /> : q.isError || !run ? <ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /> : (
           <section className="glass jcard" data-testid="screen-plan">

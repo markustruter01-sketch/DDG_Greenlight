@@ -163,7 +163,7 @@ export default function Fix() {
   };
 
   return (
-    <Shell runId={id} guide={screen ? undefined : guide} runMeta={run ? `${run.projectName} · fixing` : undefined}>
+    <Shell runId={id} guide={screen ? undefined : guide} runMeta={run ? `${run.projectName} · fixing` : undefined} coach={screen || !run ? null : awaiting ? { id: 'approve', text: 'Press Keep them.', target: '[data-testid="button-approve-pr"]' } : shown?.verificationRunId ? { id: 'fix-proof', text: 'Press See the proof.', target: '[data-testid="link-verified-results"]' } : { id: 'fix-plan', text: 'Press Go to the plan.', target: '[data-testid="link-plan"]' }}>
       {q.isLoading ? <div className="jl"><Skeleton className="h-80 w-full" /></div> : q.isError || !run ? <div className="jl"><ErrorBlock message="Assessment unavailable." onRetry={() => q.refetch()} /></div> : screen ? (
         <FixConsole key={screen.kind === 'live' ? screen.fixId : 'replay'} source={screen} project={run.projectName} wave={screen.kind === 'replay' ? screen.recording.wave : (requested?.wave ?? inFlight?.wave ?? latest?.wave ?? 1)}
           exitLabel={screen.kind === 'live' ? 'Review the changes' : 'Back'}

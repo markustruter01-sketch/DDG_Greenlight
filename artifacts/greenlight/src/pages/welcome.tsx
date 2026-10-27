@@ -3,6 +3,7 @@ import { Link } from 'wouter';
 import { ArrowRight, Play } from 'lucide-react';
 import { Shell, Logo, STEPS } from '@/components/shell';
 import { Modal } from '@/components/gl';
+import { dismissCoach } from '@/components/coach';
 
 /** The 90-second explainer (public/explainer.mp4), rendered from the DDG motion kit. */
 const EXPLAINER = `${import.meta.env.BASE_URL}explainer.mp4`;
@@ -25,7 +26,7 @@ const BLURBS: Record<string, string> = {
 export default function Welcome() {
   const [watch, setWatch] = useState(false);
   return (
-    <Shell chrome={false}>
+    <Shell chrome={false} coach={watch ? null : { id: 'welcome', text: 'Press Watch how it works.', target: '[data-testid="button-watch-how"]' }}>
       <div className="jl" data-testid="welcome-page">
         <section className="glass jcard welcome-journey" data-testid="hero-greenlight">
           <div className="flex items-center justify-between gap-3">
@@ -50,7 +51,7 @@ export default function Welcome() {
           </nav>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link href="/start" className="btn btn-go btn-big" data-testid="link-start-assessment">Check my code <ArrowRight size={20} /></Link>
-            <button className="btn btn-quiet" onClick={() => setWatch(true)} data-testid="button-watch-how"><Play size={16} /> Watch how it works · 1:30</button>
+            <button className="btn btn-quiet btn-attn" onClick={() => { dismissCoach('welcome'); setWatch(true); }} data-testid="button-watch-how"><Play size={16} /> Watch how it works · 1:30</button>
           </div>
           <p className="jnote text-center">Every check is code, not AI. Claude is used for one thing: writing the fixes you approve.</p>
         </section>

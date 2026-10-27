@@ -179,7 +179,13 @@ export default function Start({ auth }: { auth?: 'in' | 'up' }) {
   );
 
   return (
-    <Shell guide={guide} roadStep={stage === 'code' ? 0 : 1}>
+    <Shell guide={guide} roadStep={stage === 'code' ? 0 : 1} coach={
+      stage === 'code'
+        ? (saved && demo ? { id: 'start-open', text: `Press Open on ${demo.name}.`, target: `[data-testid="link-open-${demo.id}"]` } : { id: 'start-saved', text: 'Press Saved projects.', target: '[data-testid="button-saved-toggle"]' })
+        : stage === 'standards'
+          ? { id: 'standards', text: questions ? 'Keep them. Press Next.' : 'Keep them. Press Check my code.', target: questions ? '[data-testid="link-next-levels"]' : '[data-testid="button-assess"]' }
+          : { id: 'levels', text: 'Leave the usual. Press Check my code.', target: '[data-testid="button-assess"]' }
+    }>
       <div className="jl">
         {stage === 'code' && (
           <section className="glass jcard" data-testid="screen-code">
@@ -203,7 +209,7 @@ export default function Start({ auth }: { auth?: 'in' | 'up' }) {
             <div className="jrow">
               <div className="flex flex-wrap items-center gap-3">
                 <Link href="/start/standards" className={`btn btn-go btn-big ${sourceOk ? '' : 'pointer-events-none opacity-40'}`} aria-disabled={!sourceOk} data-testid="link-next-standards">Next · pick the standards <ArrowRight size={20} /></Link>
-                <button className="btn btn-quiet" onClick={() => setSaved((v) => !v)} data-testid="button-saved-toggle">{saved ? 'Hide saved projects' : `Saved projects${projects.data?.length ? ` · ${projects.data.length}` : ''}`}</button>
+                <button className={`btn btn-quiet ${saved ? '' : 'btn-attn'}`} onClick={() => setSaved((v) => !v)} data-testid="button-saved-toggle">{saved ? 'Hide saved projects' : `Saved projects${projects.data?.length ? ` · ${projects.data.length}` : ''}`}</button>
               </div>
               {demo && <span className="jnote">Try the sample · <Link href={`/results/${demo.latestRunId}`} className="underline" style={{ color: '#00E5FF' }} data-testid="link-sample">{demo.name}</Link></span>}
             </div>

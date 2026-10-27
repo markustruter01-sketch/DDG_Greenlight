@@ -453,7 +453,7 @@ export default function Orbit() {
   const t = counts ? tone(counts) : null;
 
   return (
-    <Shell runId={id} roadStep={2} tourHeaderHighlight={tourIndex === 8 && !['closed', 'prompt'].includes(tourStatus)}
+    <Shell runId={id} roadStep={2} coach={run && tourStatus === 'closed' && !target ? { id: 'orbit', text: 'Drag the planet. Tap a light. Then press Show me the plan.', target: '[data-testid="link-header-plan"]', drag: '.orbit-visual' } : null} tourHeaderHighlight={tourIndex === 8 && !['closed', 'prompt'].includes(tourStatus)}
       guide={run && !afterName ? {
         steps: tourActiveNow
           ? ['Watch the guided tour; press Exit on the caption to take over', 'Tap any light to read what is wrong and where', 'Press Show me the plan']

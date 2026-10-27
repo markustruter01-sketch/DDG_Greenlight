@@ -34,8 +34,8 @@ function edgePoint(from: { x: number; y: number }, r: DOMRect, pad: number) {
   return { x: cx + dx * Math.min(1, t), y: cy + dy * Math.min(1, t) };
 }
 
-function measure(target: PointerTarget): Geometry | null {
-  const cap = document.querySelector(CAPTION)?.getBoundingClientRect();
+function measure(target: PointerTarget, from: string): Geometry | null {
+  const cap = document.querySelector(from)?.getBoundingClientRect();
   let tx: number, ty: number, box: Geometry['box'], dot: Geometry['dot'], rect: DOMRect | null = null;
   if (target.kind === 'dom') {
     const el = document.querySelector(target.selector) as HTMLElement | null;
@@ -92,25 +92,26 @@ function measure(target: PointerTarget): Geometry | null {
 const same = (a: Geometry | null, b: Geometry | null) =>
   !!a && !!b && Math.abs(a.o.x - b.o.x) < 0.5 && Math.abs(a.o.y - b.o.y) < 0.5 && Math.abs(a.e.x - b.e.x) < 0.5 && Math.abs(a.e.y - b.e.y) < 0.5;
 
-export function TourPointer({ target, targetKey }: { target: PointerTarget | null; targetKey: string }) {
+/** `from`: the element the line leaves from (the tour caption unless told otherwise). */
+export function TourPointer({ target, targetKey, from = CAPTION }: { target: PointerTarget | null; targetKey: string; from?: string }) {
   const [g, setG] = useState<Geometry | null>(null);
   const targetRef = useRef(target);
   targetRef.current = target;
   // Measure the new target before paint, so the label and the line never disagree
   // on a slow frame (the per-frame loop below then keeps it following the camera).
-  useLayoutEffect(() => { setG(target ? measure(target) : null); }, [target]);
+  useLayoutEffect(() => { setG(target ? measure(target, from) : null); }, [target, from]);
   useEffect(() => {
     let raf = 0;
     let last: Geometry | null = null;
     const tick = () => {
       const t = targetRef.current;
-      const next = t ? measure(t) : null;
+      const next = t ? measure(t, from) : null;
       if (!same(next, last)) { last = next; setG(next); }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [from]);
   if (!g || !target) return null;
   const d = `M ${g.o.x} ${g.o.y} Q ${g.c.x} ${g.c.y} ${g.e.x} ${g.e.y}`;
   const head = 16;
