@@ -1,0 +1,74 @@
+demo run: 6eca910c-eaa2-4314-a9f0-005dfe788949
+shot 0a-loader-2s
+shot 0b-home
+shot 0c-explainer-modal
+shot 00-results
+shot 00b-orbit
+shot 01-orbit-popup
+  arrow: YOUR SOFTWARE · ring · M 960.0000000000002 921.78125 Q 912.5040625000004 813.835937 · caption bc
+shot tour-00-slide1-4s
+  arrow: YOUR SOFTWARE · ring · M 960.0000000000002 921.78125 Q 912.5040625000004 813.835937 · caption bc
+shot tour-01-slide1-11s
+  arrow: SAFETY · INNER RING · ring · M 815.654021021428 900.78125 Q 779.2841054365445 818.1223509 · caption bc
+shot tour-02-slide2-19s
+  arrow: AI · OUTER RING · box · M 676 922.78125 Q 591.7607835456937 569.0195410747248 305.47 · caption bc
+shot tour-03-slide2-25s
+  arrow: SHOW PASSING ITEMS · box · M 676 922.78125 Q 582.7520481823492 544.9503889177588 285.58 · caption bc
+shot tour-04-slide3-32s
+  arrow: SHOW PASSING ITEMS · box · M 676 922.78125 Q 582.7520481823492 544.9503889177588 285.58 · caption bc
+shot tour-05-slide3-39s
+  arrow: MUST FIX · OWASP ASVS V6.1.1 · ring · M 960 900.78125 Q 917.1240625000002 803.3359375000003 960 70 · caption bc
+shot tour-06-slide4-46s
+  arrow: MUST FIX · OWASP ASVS V6.1.1 · ring · M 960 921.78125 Q 912.5040625000001 813.8359375000003 960 70 · caption bc
+shot tour-07-slide4-50s
+  arrow: MUST-FIX LAYER · box · M 676 943.78125 Q 494.76451758468613 541.5327294500066 129.7 · caption bc
+shot tour-08-slide4-57s
+  arrow: no arrow
+shot tour-09-slide5-62s
+  arrow: ED-153 3.4.1 · ring · M 960.0000000000005 900.78125 Q 917.1240625000007 803.335937 · caption bc
+shot tour-10-slide5-68s
+  arrow: A SCORE PER STANDARD · box · M 898.0234375 900.78125 Q 778.0234375 567.28125 898.0234375  · caption bc
+shot tour-11-slide6-76s
+  arrow: A SCORE PER STANDARD · box · M 898.0234375 900.78125 Q 778.0234375 565.28125 898.0234375  · caption bc
+shot tour-12-slide6-81s
+  arrow: OWASP ASVS · SELECT FOR DETAIL · box · M 676 922.78125 Q 733.639113459577 539.5097944570662 554.558 · caption bc
+shot tour-13-slide6-88s
+  arrow: AFTER ROUND 2 · box · M 935 900.78125 Q 815 596.53125 935 292.28125 · caption bc
+shot tour-14-slide7-96s
+  arrow: AFTER ROUND 4 · box · M 1105 900.78125 Q 985 596.53125 1105 292.28125 · caption bc
+shot tour-15-slide7-102s
+  arrow: no arrow
+shot tour-16-slide8-110s
+  arrow: WHAT, WHERE, WHICH RULE, HOW TO FIX · box · M 1244 922.78125 Q 1306.910239756532 828.3954312648456 1419  · caption bc
+shot tour-17-slide8-116s
+  arrow: TAP ANY LIGHT · ring · M 959.9999999999998 900.78125 Q 900.824360344874 766.2911598 · caption bc
+shot tour-18-slide8-119s
+  arrow: TAP ANY LIGHT · ring · M 959.9999999999998 900.78125 Q 900.5465134816507 765.659689 · caption bc
+shot tour-19-slide8-123s
+  arrow: CHECKED BY CODE, NOT AI · box · M 1244 902.78125 Q 1240.9923044375473 456.00933258308663 146 · caption bc
+shot tour-20-slide9-130s
+  arrow: SHOW ME THE PLAN · box · M 1244 902.78125 Q 1340.1472140375652 436.687064696618 1651. · caption bc
+shot tour-21-slide9-137s
+  arrow: (no label) · box · M 410 960 Q 943.3782594919221 421.5102932107294 1618.3785697 · caption bc
+shot tour-22-slide9-146s
+shot 70-start
+shot 71-start-standards
+shot 72-start-info
+shot 73-start-levels
+shot 75-plan
+shot 80-fix
+shot 81-replay-12s
+shot 82-replay-third
+shot 83-replay-two-thirds
+shot 84-replay-late
+shot 85-replay-end
+shot 86-verified-before-flip
+shot 87-verified
+shot 88-verified-toggled-before
+shot 89-verified-all-waves
+done screen after 270 ms
+shot 89b-signoff
+shot 89c-signoff-export
+shot 90-how-it-checks
+shot 91-finding-rule-block
+shot 92-not-found
