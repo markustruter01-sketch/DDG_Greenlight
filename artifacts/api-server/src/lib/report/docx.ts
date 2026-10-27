@@ -26,7 +26,7 @@ const run = (text: string, o: { bold?: boolean; size?: number; color?: string; m
 
 function cellPara(c: Cell, size = 16) {
   const text = typeof c === "string" ? c : c.text;
-  const o = typeof c === "string" ? {} : c;
+  const o: Exclude<Cell, string> = typeof c === "string" ? { text: c } : c;
   const r = run(text, { size, bold: o.bold || !!o.tone, color: o.tone ? TONE[o.tone].fg : o.muted ? MUTED : undefined, mono: o.mono });
   return new Paragraph({ children: [o.goTo ? new InternalHyperlink({ anchor: bm(o.goTo), children: [run(text, { size, mono: o.mono, color: ACCENT, bold: true })] }) : r] });
 }
